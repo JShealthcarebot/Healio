@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v1.2.4</title>
+<title>健康管家 v1.2.5</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -54,14 +54,41 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 .table{margin-top:12px;border:1px solid var(--line);border-radius:10px;overflow:hidden}.thead,.table .row{display:grid;grid-template-columns:1.1fr 1.5fr 1.3fr .9fr;padding:10px 12px}.thead{background:#f7fafc;font-weight:900;font-size:10px}.table .row{border-top:1px solid #edf1f5;align-items:center}.right{text-align:right}.page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.page-head h2{margin:0;font-size:19px}
 .modal{position:fixed;inset:0;background:#07192d7a;display:none;align-items:center;justify-content:center;z-index:100}.modal.show{display:flex}.modal-box{width:min(500px,92vw);max-height:90vh;overflow:auto;background:#fff;border-radius:16px;padding:20px}.modal-box h2{margin:0 0 14px;font-size:18px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}label{font-size:11px;font-weight:800;color:#526175}input,select,textarea{width:100%;border:1px solid #dce4ec;border-radius:8px;padding:9px;margin-top:4px;background:#fff}textarea{min-height:65px;resize:vertical}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px}.primary{border:0;background:#237df1;color:#fff;border-radius:8px;padding:9px 15px;font-weight:800}.secondary{border:1px solid #dce4ec;background:#fff;border-radius:8px;padding:9px 15px;font-weight:800}.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#14233b;color:#fff;padding:9px 14px;border-radius:8px;font-size:12px;opacity:0;pointer-events:none;transition:.2s;z-index:200}.toast.show{opacity:1}
 @media(max-width:1050px){.quick{grid-template-columns:repeat(3,1fr)}.grid4{grid-template-columns:repeat(2,1fr)}.charts{grid-template-columns:repeat(2,1fr)}.finance-grid{grid-template-columns:1fr}}
-@media(max-width:720px){.sidebar{width:64px;padding:10px 7px}.brand div:not(.brand-icon),.brand small,.navgroup,.nav span,.cycle,.mascot,.motto{display:none}.brand{justify-content:center}.main{margin-left:64px;width:calc(100% - 64px);padding:15px}.quick,.grid4,.two,.records,.charts{grid-template-columns:1fr 1fr}.greeting{font-size:14px}.top{align-items:flex-start}.thead,.table .row{grid-template-columns:1fr 1.3fr 1fr}.table .row>div:last-child{grid-column:1/-1;text-align:left}}
-@media(max-width:500px){.quick,.grid4,.two,.records,.charts{grid-template-columns:1fr}.money3{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}.bowel-summary{align-items:flex-start;flex-direction:column}.table .row{display:block}.table .row>div{margin:3px 0}.thead{display:none}}
+@media(max-width:720px){
+  .sidebar{
+    position:fixed;left:0;right:0;top:0;bottom:auto;width:100%;height:92px;
+    padding:7px 9px;display:flex;align-items:center;gap:8px;overflow-x:auto;overflow-y:hidden;
+    white-space:nowrap;border-radius:0 0 12px 12px;
+  }
+  .brand{flex:0 0 auto;justify-content:center;margin:0 3px 0 0}
+  .brand div:not(.brand-icon),.brand small,.navgroup,.cycle,.mascot,.motto{display:none}
+  .brand-icon{width:36px;height:36px;font-size:22px}
+  .nav{width:auto;flex:0 0 auto;margin:0;padding:8px 10px;font-size:11px;border-radius:9px}
+  .nav span{display:inline}
+  .main{margin-left:0;margin-top:92px;width:100%;padding:13px 11px 28px}
+  .quick,.grid4,.two,.records,.charts{grid-template-columns:1fr 1fr}
+  .greeting{font-size:14px}.date{font-size:11px}.top{align-items:flex-start}
+  .thead,.table .row{grid-template-columns:1fr 1.3fr 1fr}
+  .table .row>div:last-child{grid-column:1/-1;text-align:left}
+}
+@media(max-width:500px){
+  .sidebar{height:86px;padding:6px 7px;gap:5px}
+  .brand-icon{width:34px;height:34px;font-size:21px}
+  .nav{font-size:10px;padding:7px 8px}
+  .main{margin-top:86px;padding:11px 9px 26px}
+  .quick,.grid4,.two,.records,.charts{grid-template-columns:1fr}
+  .money3{grid-template-columns:1fr 1fr 1fr}
+  .form-grid{grid-template-columns:1fr}.full{grid-column:auto}
+  .bowel-summary{align-items:flex-start;flex-direction:column}
+  .table .row{display:block}.table .row>div{margin:3px 0}.thead{display:none}
+  .card{padding:11px}.section-title{font-size:14px}.quick button{min-height:62px}
+}
 </style>
 </head>
 <body>
 <div class="app">
 <aside class="sidebar">
-<div class="brand"><div class="brand-icon">💧</div><div>健康管家<small>v1.2.3</small></div></div>
+<div class="brand"><div class="brand-icon">💧</div><div>健康管家<small>v1.2.4</small></div></div>
 <button class="nav active" data-page="dashboard">🏠 <span>首頁總覽</span></button>
 <div class="navgroup">健康記錄</div><button class="nav" data-page="water">💧 <span>補水紀錄</span></button><button class="nav" data-page="drink">🥤 <span>飲品紀錄</span></button><button class="nav" data-page="food">🍴 <span>食物紀錄</span></button><button class="nav" data-page="bowel">🚽 <span>排便紀錄</span></button><button class="nav" data-page="weight">⚖️ <span>體重紀錄</span></button>
 <div class="navgroup">數據分析</div><button class="nav" data-page="trends">📈 <span>健康趨勢</span></button><button class="nav" data-page="calories">📊 <span>熱量分析</span></button>
@@ -116,6 +143,10 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 <div class="moneybox"><span class="expense">支出</span><b class="expense" id="finExpense">$0</b></div>
 <div class="moneybox"><span>結餘</span><b class="balance" id="finBalance">$0</b></div>
 </div>
+<div class="finance-actions">
+<button class="outline" onclick="financeModal('income')">＋ 新增收入</button>
+<button class="outline expense-btn" onclick="financeModal('expense')">＋ 新增支出</button>
+</div>
 
 
 <details class="finance-details">
@@ -144,7 +175,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 <section id="profile" class="page"><div class="card"><h2>基本資料</h2><div class="form-grid"><label>身高（cm）<input id="ph" type="number"></label><label>體重（kg）<input id="pw" type="number" step=".1"></label><label>年齡<input id="pa" type="number"></label><label>生理性別<select id="ps"><option value="">未提供</option><option value="male">男性</option><option value="female">女性</option></select></label><label class="full">活動量<select id="pac"><option value="sedentary">久坐</option><option value="normal">一般</option><option value="active">活動量高</option></select></label></div><div id="profilePreview" class="tip"></div><div class="modal-actions"><button class="primary" onclick="saveProfile()">儲存基本資料</button></div></div></section>
 <section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" onclick="saveSalary()">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v1.2.3</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v1.2.4</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
 
