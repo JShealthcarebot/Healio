@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v1.2.7</title>
+<title>健康管家 v2</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -761,16 +761,133 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 }
 </style>
 
+
+<style>
+.sidebar-current-user{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  margin:0 4px 16px;
+  padding:8px 9px;
+  border:1px solid rgba(255,255,255,.11);
+  border-radius:10px;
+  background:rgba(255,255,255,.06);
+  color:#cbdbea;
+  font-size:9px;
+  font-weight:700;
+  cursor:pointer;
+}
+.sidebar-current-user strong{
+  color:#fff;
+  font-weight:900;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.sidebar-current-user:hover{background:rgba(255,255,255,.1)}
+.sidebar-user-dot{color:#69c5a0;font-size:8px}
+.current-user-top{
+  display:inline-flex;
+  align-items:center;
+  padding:6px 9px;
+  margin-right:8px;
+  border-radius:99px;
+  background:#edf5ff;
+  color:#2c79b9;
+  font-size:10px;
+  font-weight:900;
+}
+@media(max-width:720px){
+  .sidebar-current-user{
+    margin:0 8px;
+    flex:0 0 auto;
+    white-space:nowrap;
+  }
+  .current-user-top{font-size:9px;padding:5px 8px}
+}
+</style>
+
+
+<style>
+.new-user-dialog{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(15,31,49,.35);
+  backdrop-filter:blur(3px);
+}
+.new-user-box{
+  width:min(390px,100%);
+  padding:20px;
+  border-radius:16px;
+  background:#fff;
+  box-shadow:0 18px 50px rgba(20,40,65,.18);
+}
+.new-user-title{
+  color:#1e3550;
+  font-size:17px;
+  font-weight:900;
+}
+.new-user-desc{
+  margin:5px 0 15px;
+  color:#8290a0;
+  font-size:10px;
+  line-height:1.6;
+}
+.new-user-box label{
+  display:block;
+  color:#53677d;
+  font-size:10px;
+  font-weight:800;
+}
+.new-user-box input{
+  box-sizing:border-box;
+  width:100%;
+  height:40px;
+  margin-top:6px;
+  padding:0 11px;
+  border:1px solid #d6e0e9;
+  border-radius:9px;
+  outline:none;
+  font-size:12px;
+}
+.new-user-box input:focus{
+  border-color:#79a9d4;
+  box-shadow:0 0 0 3px rgba(77,145,205,.1);
+}
+.new-user-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:16px;
+}
+</style>
+
+
+<style>
+.profile-user-controls .btn{white-space:nowrap}
+@media(max-width:600px){
+  .profile-user-controls .btn{width:100%}
+}
+</style>
+
 </head>
 <body>
 <div class="app">
 <aside class="sidebar">
-<div class="brand"><div class="brand-icon">💧</div>
+<div class="brand">
+  <div class="brand-icon">💧</div>
+  <div>健康管家<small>v1.2.7</small></div>
+</div>
 <div class="sidebar-current-user" onclick="showPage('profile')" title="前往使用者管理">
   <span class="sidebar-user-dot">●</span>
-  <span id="sidebarCurrentUser">使用者 1</span>
+  <span>目前使用者：</span>
+  <strong id="sidebarCurrentUser">我的帳戶</strong>
 </div>
-<div>健康管家<small>v1.2.6</small></div></div>
 <button class="nav active" data-page="dashboard">🏠 <span>首頁總覽</span></button>
 <div class="navgroup">健康記錄</div><button class="nav" data-page="water">💧 <span>補水紀錄</span></button><button class="nav" data-page="drink">🥤 <span>飲品紀錄</span></button><button class="nav" data-page="food">🍴 <span>食物紀錄</span></button><button class="nav" data-page="bowel">🚽 <span>排便紀錄</span></button><button class="nav" data-page="weight">⚖️ <span>體重紀錄</span></button>
 <div class="navgroup">數據分析</div><button class="nav" data-page="trends">📈 <span>健康趨勢</span></button><button class="nav" data-page="calories">📊 <span>熱量分析</span></button>
@@ -781,7 +898,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 
 <main class="main">
 <section id="dashboard" class="page active">
-<div class="top"><div class="greeting">早安！健康管家陪你一起記錄每一天 💪</div><div class="date" id="todayText"></div></div>
+<div class="top"><div class="greeting">早安！健康管家陪你一起記錄每一天 💪</div><div><span class="current-user-top" id="topCurrentUser">👤 使用者 1</span><span class="date" id="todayText"></span></div></div>
 <div class="section-title">快速記錄</div><div class="quick">
 <button class="qwater" onclick="waterModal()"><span class="qicon">💧</span><span class="qname">補水</span><span class="qsub">自訂輸入 mL</span></button>
 <button class="qdrink" onclick="drinkModal()"><span class="qicon">🥤</span><span class="qname">飲品</span><span class="qsub">記錄飲品</span></button>
@@ -1006,13 +1123,14 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
       <h3>使用者與資料管理</h3>
       <p>每位使用者的健康與記帳資料獨立保存</p>
     </div>
-    <div class="profile-user-badge" id="currentUserBadge">使用者 1</div>
+    <div class="profile-user-badge" id="currentUserBadge">我的帳戶</div>
   </div>
   <div class="profile-user-controls">
     <label class="profile-user-select">
       <span>目前使用者</span>
       <select id="userSelect" onchange="switchUser(this.value)"></select>
     </label>
+    <button class="btn secondary" type="button" onclick="renameCurrentUser()">✎ 修改名稱</button>
     <button class="btn secondary" type="button" onclick="addUser()">＋新增使用者</button>
     <button class="btn danger-outline profile-clear-btn" type="button" onclick="clearCurrentUser()">🗑 清除目前使用者資料</button>
   </div>
@@ -1069,8 +1187,12 @@ let editState={type:null,id:null};
 const $=id=>document.getElementById(id),uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8),today=()=>new Date().toISOString().slice(0,10);
 function nowTime(){const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function save(){localStorage.setItem(KEY,JSON.stringify(db))
-  if(typeof saveCurrentDb==='function') localStorage.setItem(userKey(getCurrentUserId()),JSON.stringify(db));
+function save(){
+  normalize();
+  if(typeof getCurrentUserId==='function' && typeof userKey==='function'){
+    localStorage.setItem(userKey(getCurrentUserId()),JSON.stringify(db));
+  }
+  localStorage.setItem(KEY,JSON.stringify(db));
 }
 function toast(s){$('toast').textContent=s;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),1600)}
 function showPage(id){
@@ -1091,6 +1213,19 @@ document.querySelectorAll('.nav').forEach(function(nav){
 
 document.addEventListener('toggle',e=>{if(e.target.matches('.finance-details')&&e.target.open)requestAnimationFrame(drawFinanceCharts)},true);
 window.addEventListener('resize',()=>{const d=document.querySelector('.finance-details');if(d&&d.open)drawFinanceCharts()});
+function normalize(){
+  if(!db || typeof db!=='object') db={};
+  db.profile=db.profile||{height:0,weight:0,age:0,sex:'',activity:'normal'};
+  db.water=Array.isArray(db.water)?db.water:[];
+  db.drinks=Array.isArray(db.drinks)?db.drinks:[];
+  db.foods=Array.isArray(db.foods)?db.foods:[];
+  db.bowel=Array.isArray(db.bowel)?db.bowel:[];
+  db.weights=Array.isArray(db.weights)?db.weights:[];
+  db.finance=Array.isArray(db.finance)?db.finance:[];
+  db.income=Array.isArray(db.income)?db.income:[];
+  db.expense=Array.isArray(db.expense)?db.expense:[];
+  db.salaryDay=Number(db.salaryDay||5);
+}
 function day(type,d=today()){return db[type].filter(x=>x.date===d)}
 function waterGoal(){return db.profile?.weight?Math.max(1500,Math.round(db.profile.weight*32/50)*50):2000}
 function calorieGoal(){const p=db.profile;if(!p?.height||!p?.weight||!p?.age)return 2000;const b=10*p.weight+6.25*p.height-5*p.age+(p.sex==='male'?5:p.sex==='female'?-161:-78);return Math.round(b*({sedentary:1.2,normal:1.375,active:1.55}[p.activity||'normal'])/50)*50}
@@ -1412,7 +1547,7 @@ function getUserIndex(){
 
     // 第一次啟用多使用者時，把舊版單一使用者資料保留為「使用者 1」。
     const legacy=localStorage.getItem(KEY)||localStorage.getItem(OLD_KEY);
-    const list=[{id:DEFAULT_USER_ID,name:'使用者 1'}];
+    const list=[{id:DEFAULT_USER_ID,name:'我的帳戶'}];
     localStorage.setItem(USER_INDEX_KEY,JSON.stringify(list));
 
     if(legacy && !localStorage.getItem(userKey(DEFAULT_USER_ID))){
@@ -1420,7 +1555,7 @@ function getUserIndex(){
     }
     return list;
   }catch(e){
-    return [{id:DEFAULT_USER_ID,name:'使用者 1'}];
+    return [{id:DEFAULT_USER_ID,name:'我的帳戶'}];
   }
 }
 function saveUserIndex(list){
@@ -1467,6 +1602,8 @@ function loadUserData(id){
     saveCurrentDb();
   }
   normalize();
+  // 目前使用者的資料也同步保存一次，確保切換後不會遺失。
+  if(typeof userKey==='function') localStorage.setItem(userKey(id),JSON.stringify(db));
 }
 
 function renderUserSwitcher(){
@@ -1491,40 +1628,172 @@ function renderUserSwitcher(){
 
   if($('currentUserBadge'))$('currentUserBadge').textContent=name;
   if($('sidebarCurrentUser'))$('sidebarCurrentUser').textContent=name;
+  if($('topCurrentUser'))$('topCurrentUser').textContent='👤 '+name;
 }
 function switchUser(id){
   if(!id)return;
-  setCurrentUserId(id);
-  loadUserData(id);
-  loadProfile();
-  render();
-  renderUserSwitcher();
-  toast('已切換至 '+(getUserIndex().find(u=>u.id===id)?.name||'使用者'));
-}
-
-function addUser(){
-  const name=prompt('請輸入使用者名稱，例如：自己、爸爸、媽媽');
-  if(!name || !name.trim())return;
-
-  const cleanName=name.trim();
   const list=getUserIndex();
-
-  if(list.some(u=>u.name===cleanName)){
-    return toast('已有相同名稱的使用者');
-  }
-
-  const id='user_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-  list.push({id,name:cleanName});
-  saveUserIndex(list);
+  const target=list.find(u=>u.id===id);
+  if(!target)return;
 
   setCurrentUserId(id);
   loadUserData(id);
   loadProfile();
-  renderUserSwitcher();
   render();
   renderUserSwitcher();
   showPage('profile');
-  toast('已新增「'+cleanName+'」，目前使用者已切換為 '+cleanName);
+  toast('目前使用者：'+target.name);
+}
+
+function renameCurrentUser(){
+  const current=getCurrentUserId();
+  const list=getUserIndex();
+  const user=list.find(u=>u.id===current);
+  if(!user)return;
+
+  const existing=document.getElementById('renameUserDialog');
+  if(existing){existing.remove();return;}
+
+  const wrap=document.createElement('div');
+  wrap.id='renameUserDialog';
+  wrap.className='new-user-dialog';
+  wrap.innerHTML=`
+    <div class="new-user-box">
+      <div class="new-user-title">修改使用者名稱</div>
+      <div class="new-user-desc">目前名稱：${escapeHtml(user.name)}</div>
+      <label>使用者名稱
+        <input id="renameUserName" type="text" maxlength="20" value="${escapeHtml(user.name)}" placeholder="請輸入名稱">
+      </label>
+      <div class="new-user-actions">
+        <button type="button" class="btn secondary" onclick="closeRenameUserDialog()">取消</button>
+        <button type="button" class="btn primary" onclick="confirmRenameUser()">儲存名稱</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+
+  const input=document.getElementById('renameUserName');
+  if(input){
+    input.focus();
+    input.select();
+    input.addEventListener('keydown',e=>{
+      if(e.key==='Enter')confirmRenameUser();
+      if(e.key==='Escape')closeRenameUserDialog();
+    });
+  }
+}
+
+function closeRenameUserDialog(){
+  document.getElementById('renameUserDialog')?.remove();
+}
+
+function confirmRenameUser(){
+  const input=document.getElementById('renameUserName');
+  const name=(input?.value||'').trim();
+  if(!name){
+    toast('請輸入使用者名稱');
+    input?.focus();
+    return;
+  }
+
+  const current=getCurrentUserId();
+  const list=getUserIndex();
+  const user=list.find(u=>u.id===current);
+  if(!user)return;
+
+  if(list.some(u=>u.id!==current && u.name===name)){
+    toast('已有相同名稱的使用者');
+    input?.focus();
+    return;
+  }
+
+  user.name=name;
+  saveUserIndex(list);
+  closeRenameUserDialog();
+  renderUserSwitcher();
+  toast('使用者名稱已改為「'+name+'」');
+}
+
+function escapeHtml(value){
+  return String(value??'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
+
+function addUser(){
+  const existing=document.getElementById('newUserDialog');
+  if(existing){ existing.remove(); return; }
+
+  const wrap=document.createElement('div');
+  wrap.id='newUserDialog';
+  wrap.className='new-user-dialog';
+  wrap.innerHTML=`
+    <div class="new-user-box">
+      <div class="new-user-title">新增使用者</div>
+      <div class="new-user-desc">建立後會立即切換到這位使用者，資料與其他使用者分開保存。</div>
+      <label>使用者名稱
+        <input id="newUserName" type="text" maxlength="20" placeholder="例如：自己、爸爸、媽媽">
+      </label>
+      <div class="new-user-actions">
+        <button type="button" class="btn secondary" onclick="closeNewUserDialog()">取消</button>
+        <button type="button" class="btn primary" onclick="confirmAddUser()">建立使用者</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+
+  const input=document.getElementById('newUserName');
+  if(input){
+    input.focus();
+    input.addEventListener('keydown',e=>{
+      if(e.key==='Enter') confirmAddUser();
+      if(e.key==='Escape') closeNewUserDialog();
+    });
+  }
+}
+
+function closeNewUserDialog(){
+  document.getElementById('newUserDialog')?.remove();
+}
+
+function confirmAddUser(){
+  const input=document.getElementById('newUserName');
+  const cleanName=(input?.value||'').trim();
+  if(!cleanName){
+    toast('請輸入使用者名稱');
+    input?.focus();
+    return;
+  }
+
+  const list=getUserIndex();
+  if(list.some(u=>u.name===cleanName)){
+    toast('已有相同名稱的使用者');
+    input?.focus();
+    return;
+  }
+
+  const id='user_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+  list.push({id:id,name:cleanName});
+  saveUserIndex(list);
+  setCurrentUserId(id);
+
+  db={
+    profile:{height:0,weight:0,age:0,sex:'',activity:'normal'},
+    water:[],drinks:[],foods:[],bowel:[],weights:[],
+    income:[],expense:[],salaryDay:5
+  };
+  normalize();
+  localStorage.setItem(userKey(id),JSON.stringify(db));
+
+  closeNewUserDialog();
+  loadUserData(id);
+  renderUserSwitcher();
+  loadProfile();
+  render();
+  renderUserSwitcher();
+  showPage('profile');
+  toast('已建立「'+cleanName+'」，目前使用者已切換');
 }
 function clearCurrentUser(){
   const current=getCurrentUserId();
