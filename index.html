@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v2</title>
+<title>健康管家 v2.1</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -370,6 +370,25 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
     border-bottom:1px solid #e4ebf2;
   }
   .trend-analysis-text .analysis-item:last-child{border-bottom:0}
+}
+
+
+/* v2 user management */
+.danger-btn{
+  border:1px solid #ef9a9a;
+  background:#fff5f5;
+  color:#c62828;
+  border-radius:10px;
+  padding:9px 13px;
+  cursor:pointer;
+  font-weight:600;
+}
+.danger-btn:hover{background:#ffebee}
+.user-manage-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.default-user-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:12px;padding:4px 8px;border-radius:999px;
+  background:#fff8e1;color:#8d6e00;border:1px solid #ffe082;
 }
 
 </style>
@@ -1129,11 +1148,13 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
     <label class="profile-user-select">
       <span>目前使用者</span>
       <select id="userSelect" onchange="switchUser(this.value)"></select>
+<button type="button" onclick="setDefaultCurrentUser()">⭐ 設為預設</button>
     </label>
     <button class="btn secondary" type="button" onclick="renameCurrentUser()">✎ 修改名稱</button>
     <button class="btn secondary" type="button" onclick="addUser()">＋新增使用者</button>
     <button class="btn danger-outline profile-clear-btn" type="button" onclick="clearCurrentUser()">🗑 清除目前使用者資料</button>
-  </div>
+<button class="danger-btn" onclick="deleteCurrentUser()">❌ 刪除目前使用者</button>
+  </div><div class="muted" style="margin-top:8px;font-size:13px">⭐ 預設使用者只決定下次開啟網站時先進入哪個帳戶；目前使用者仍可自由切換。</div>
 </div>
 
 <div class="card">
@@ -1165,7 +1186,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 </section>
 <section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" onclick="saveSalary()">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v1.2.6</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v2</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
 
@@ -1226,6 +1247,7 @@ function normalize(){
   db.expense=Array.isArray(db.expense)?db.expense:[];
   db.salaryDay=Number(db.salaryDay||5);
 }
+clearDefaultUserIfMissing();
 function day(type,d=today()){return db[type].filter(x=>x.date===d)}
 function waterGoal(){return db.profile?.weight?Math.max(1500,Math.round(db.profile.weight*32/50)*50):2000}
 function calorieGoal(){const p=db.profile;if(!p?.height||!p?.weight||!p?.age)return 2000;const b=10*p.weight+6.25*p.height-5*p.age+(p.sex==='male'?5:p.sex==='female'?-161:-78);return Math.round(b*({sedentary:1.2,normal:1.375,active:1.55}[p.activity||'normal'])/50)*50}
@@ -1567,7 +1589,13 @@ function userKey(id){
 }
 
 function getCurrentUserId(){
-  return localStorage.getItem('health_manager_current_user') || DEFAULT_USER_ID;
+  const list=getUserIndex();
+  if(!list.length) return DEFAULT_USER_ID;
+  const saved=localStorage.getItem('health_manager_current_user');
+  if(saved && list.some(u=>u.id===saved)) return saved;
+  const defaultId=getDefaultUserId();
+  if(defaultId && list.some(u=>u.id===defaultId)) return defaultId;
+  return list[0].id;
 }
 
 function setCurrentUserId(id){
@@ -1643,6 +1671,75 @@ function switchUser(id){
   renderUserSwitcher();
   showPage('profile');
   toast('目前使用者：'+target.name);
+}
+
+
+function getDefaultUserId(){
+  return localStorage.getItem('health_manager_default_user') || '';
+}
+
+function setDefaultUserId(id){
+  if(!id){
+    localStorage.removeItem('health_manager_default_user');
+    return;
+  }
+  localStorage.setItem('health_manager_default_user', id);
+}
+
+function setDefaultCurrentUser(){
+  const id=getCurrentUserId();
+  if(!id) return;
+  setDefaultUserId(id);
+  renderUserSwitcher();
+  render();
+  toast('已設定為預設開啟使用者');
+}
+
+function clearDefaultUserIfMissing(){
+  const list=getUserIndex();
+  const defaultId=getDefaultUserId();
+  if(defaultId && !list.some(u=>u.id===defaultId)){
+    setDefaultUserId(list[0]?.id || '');
+  }
+}
+
+function deleteCurrentUser(){
+  const list=getUserIndex();
+  const currentId=getCurrentUserId();
+  if(!currentId) return;
+
+  if(list.length<=1){
+    toast('目前只剩 1 位使用者，無法刪除');
+    return;
+  }
+
+  const current=list.find(u=>u.id===currentId);
+  const name=current?.name || '目前使用者';
+
+  if(!confirm(`確定要刪除「${name}」嗎？\n\n這會永久刪除此使用者的健康與財務資料，且無法復原。`)){
+    return;
+  }
+
+  if(!confirm(`再次確認：刪除「${name}」及其全部資料？`)){
+    return;
+  }
+
+  localStorage.removeItem(userKey(currentId));
+
+  const remaining=list.filter(u=>u.id!==currentId);
+  saveUserIndex(remaining);
+
+  if(getDefaultUserId()===currentId){
+    setDefaultUserId(remaining[0]?.id || '');
+  }
+
+  const nextId=remaining[0].id;
+  setCurrentUserId(nextId);
+  loadUserData(nextId);
+  renderUserSwitcher();
+  render();
+  showPage('profile');
+  toast(`已刪除「${name}」，目前切換至「${remaining[0].name}」`);
 }
 
 function renameCurrentUser(){
