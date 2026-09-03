@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v1.2.1</title>
+<title>健康管家 v1.2.3</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -16,6 +16,41 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 .records{display:grid;grid-template-columns:1fr 1fr;gap:12px}.list-card h3{font-size:12px;margin:0 0 10px}.row{display:flex;align-items:center;gap:7px;border-bottom:1px solid #edf1f5;padding:8px 0;font-size:11px}.row:last-child{border-bottom:0}.grow{flex:1}.price{font-weight:900}.muted{color:var(--muted)}.row-actions{display:flex;gap:2px;flex-shrink:0}.mini-edit,.mini-del{border:0;background:transparent;padding:3px 4px;font-size:10px;font-weight:800}.mini-edit{color:#267bd4}.mini-del{color:#d65b5b}.actions{margin-top:9px}.outline{border:1px solid #dce6ef;background:#fff;border-radius:8px;padding:7px 10px;color:#2171ce;font-weight:800;font-size:11px;width:100%}
 .charts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.chart{min-height:175px}.chart h4{font-size:11px;margin:0 0 8px}.chartarea{height:100px;display:flex;align-items:end;gap:7px;border-bottom:1px solid #dfe7ee;padding:0 6px}.chartarea i{flex:1;border-radius:6px 6px 0 0;background:#a9cdfb}.chartarea.orange i{background:#f4c28c}.chartarea.green i{background:#75c99c}.chartarea.purple i{background:#b9a8e7}.chartlabels{display:flex;justify-content:space-between;font-size:8px;color:#8492a3;margin-top:5px}
 .finance{border:1px solid #ff9c9c;border-radius:13px;background:#fff;padding:14px}.finance-title{font-size:14px;font-weight:900;margin-bottom:10px}.finance-grid{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:12px}.money3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.moneybox{border:1px solid #e7edf2;border-radius:9px;padding:10px;background:#fbfdfc}.moneybox span{font-size:11px}.moneybox b{display:block;font-size:17px;margin-top:5px}.income{color:#168a56}.expense{color:#df4d48}.balance{color:#18283f}
+.finance-compact{padding:10px 12px;border-color:#e5eaf0;background:#fff}
+.finance-compact .finance-title{font-size:12px;margin-bottom:7px;display:flex;align-items:center;justify-content:space-between}
+.finance-period-inline{font-size:10px;font-weight:600;color:#7d8997}
+.finance-compact .money3{gap:6px}
+.finance-compact .moneybox{padding:7px 8px;border-radius:8px}
+.finance-compact .moneybox span{font-size:10px}
+.finance-compact .moneybox b{font-size:14px;margin-top:3px}
+.finance-actions{display:flex;gap:6px;margin-top:7px}
+.finance-actions .outline{width:auto;flex:1;padding:6px 8px;font-size:10px}
+.finance-actions .expense-btn{color:#d95a55}
+.finance-cycle{margin-top:7px;padding-top:6px;border-top:1px solid #edf1f5;font-size:9px;color:#7d8997;display:flex;align-items:center;gap:3px;flex-wrap:wrap}
+.finance-cycle .secondary{padding:3px 7px;font-size:9px;margin-left:auto}
+
+.finance-details{margin-top:8px;border-top:1px solid #edf1f5}
+.finance-details summary{cursor:pointer;list-style:none;padding:8px 2px;font-size:10px;font-weight:700;color:#4c5d70}
+.finance-details summary::-webkit-details-marker{display:none}
+.finance-details summary::after{content:'＋';float:right;font-size:13px}
+.finance-details[open] summary::after{content:'－'}
+.finance-analytics{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:2px 0 3px}
+.finance-chart-card{border:1px solid #e8edf2;border-radius:8px;padding:7px;background:#fafbfd;min-width:0}
+.finance-chart-card:last-child{grid-column:1/-1}
+.chart-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:10px;color:#6d7b8a}
+.chart-head b{color:#26384d}
+.finance-chart-card canvas{display:block;width:100%!important;height:145px!important}
+.finance-stats-row{display:flex;justify-content:space-between;padding:5px 2px;border-bottom:1px solid #edf1f5;font-size:10px}
+.finance-stats-row:last-child{border-bottom:0}
+.finance-hidden-data{display:none!important}
+@media(max-width:720px){.finance-analytics{grid-template-columns:1fr}.finance-chart-card:last-child{grid-column:auto}}
+
+@media(max-width:720px){
+  .finance-compact{padding:9px}
+  .finance-compact .money3{grid-template-columns:repeat(3,1fr)}
+  .finance-actions .outline{font-size:10px}
+}
+
 .table{margin-top:12px;border:1px solid var(--line);border-radius:10px;overflow:hidden}.thead,.table .row{display:grid;grid-template-columns:1.1fr 1.5fr 1.3fr .9fr;padding:10px 12px}.thead{background:#f7fafc;font-weight:900;font-size:10px}.table .row{border-top:1px solid #edf1f5;align-items:center}.right{text-align:right}.page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.page-head h2{margin:0;font-size:19px}
 .modal{position:fixed;inset:0;background:#07192d7a;display:none;align-items:center;justify-content:center;z-index:100}.modal.show{display:flex}.modal-box{width:min(500px,92vw);max-height:90vh;overflow:auto;background:#fff;border-radius:16px;padding:20px}.modal-box h2{margin:0 0 14px;font-size:18px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}label{font-size:11px;font-weight:800;color:#526175}input,select,textarea{width:100%;border:1px solid #dce4ec;border-radius:8px;padding:9px;margin-top:4px;background:#fff}textarea{min-height:65px;resize:vertical}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px}.primary{border:0;background:#237df1;color:#fff;border-radius:8px;padding:9px 15px;font-weight:800}.secondary{border:1px solid #dce4ec;background:#fff;border-radius:8px;padding:9px 15px;font-weight:800}.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#14233b;color:#fff;padding:9px 14px;border-radius:8px;font-size:12px;opacity:0;pointer-events:none;transition:.2s;z-index:200}.toast.show{opacity:1}
 @media(max-width:1050px){.quick{grid-template-columns:repeat(3,1fr)}.grid4{grid-template-columns:repeat(2,1fr)}.charts{grid-template-columns:repeat(2,1fr)}.finance-grid{grid-template-columns:1fr}}
@@ -26,7 +61,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 <body>
 <div class="app">
 <aside class="sidebar">
-<div class="brand"><div class="brand-icon">💧</div><div>健康管家<small>v1.2.1</small></div></div>
+<div class="brand"><div class="brand-icon">💧</div><div>健康管家<small>v1.2.2</small></div></div>
 <button class="nav active" data-page="dashboard">🏠 <span>首頁總覽</span></button>
 <div class="navgroup">健康記錄</div><button class="nav" data-page="water">💧 <span>補水紀錄</span></button><button class="nav" data-page="drink">🥤 <span>飲品紀錄</span></button><button class="nav" data-page="food">🍴 <span>食物紀錄</span></button><button class="nav" data-page="bowel">🚽 <span>排便紀錄</span></button><button class="nav" data-page="weight">⚖️ <span>體重紀錄</span></button>
 <div class="navgroup">數據分析</div><button class="nav" data-page="trends">📈 <span>健康趨勢</span></button><button class="nav" data-page="calories">📊 <span>熱量分析</span></button>
@@ -74,14 +109,37 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 <div class="card chart"><h4>排便次數趨勢（次）</h4><div class="chartarea purple" id="bowelChart"></div><div class="chartlabels"><span>6 天前</span><span>今天</span></div></div>
 </div>
 
-<div class="section-title">財務記帳儀表板</div><div class="finance">
-<div class="finance-title">本期財務總覽（<span id="financePeriod"></span>）</div>
-<div class="finance-grid">
-<div><div class="money3"><div class="moneybox"><span class="income">收入</span><b class="income" id="finIncome">$0</b></div><div class="moneybox"><span class="expense">支出</span><b class="expense" id="finExpense">$0</b></div><div class="moneybox"><span>結餘</span><b class="balance" id="finBalance">$0</b></div></div><div class="card" style="margin-top:8px"><h3 style="font-size:11px;margin:0 0 5px">近期收入記錄</h3><div id="finIncomeList"></div></div></div>
-<div class="card"><h3 style="font-size:11px;margin:0 0 7px">支出分類</h3><div id="finCats"></div></div>
-<div class="card"><h3 style="font-size:11px;margin:0 0 7px">近期支出記錄</h3><div id="finExpenseList"></div><button class="outline" onclick="financeModal('expense')">＋ 新增支出</button></div>
+<div class="section-title">財務記帳</div><div class="finance finance-compact">
+<div class="finance-title">本期財務總覽 <span class="finance-period-inline">（<span id="financePeriod"></span>）</span></div>
+<div class="money3">
+<div class="moneybox"><span class="income">收入</span><b class="income" id="finIncome">$0</b></div>
+<div class="moneybox"><span class="expense">支出</span><b class="expense" id="finExpense">$0</b></div>
+<div class="moneybox"><span>結餘</span><b class="balance" id="finBalance">$0</b></div>
 </div>
-<div class="card" style="margin-top:10px;font-size:11px"><b>本期記帳週期設定</b>　發薪日：每月 <span id="salaryDayLabel">5</span> 日　　目前週期：<span id="financePeriod2"></span>　<button class="secondary" onclick="showPage('salary')">修改設定</button></div>
+
+
+<details class="finance-details">
+<summary>📊 財務統計與趨勢</summary>
+<div class="finance-analytics">
+<div class="finance-chart-card"><div class="chart-head"><b>每日收支曲線</b><span>本期</span></div><canvas id="financeTrendChart"></canvas></div>
+<div class="finance-chart-card"><div class="chart-head"><b>支出分類統計</b><span>本期</span></div><canvas id="financeCategoryChart"></canvas></div>
+<div class="finance-chart-card"><div class="chart-head"><b>本期財務摘要</b></div><div id="financeStats"></div></div>
+</div>
+</details>
+
+<div class="finance-cycle">發薪日：每月 <span id="salaryDayLabel">5</span> 日　｜　週期：<span id="financePeriod2"></span> <button class="secondary" onclick="showPage('salary')">設定</button></div>
+<div class="finance-hidden-data" aria-hidden="true"><div id="finIncomeList"></div><div id="finCats"></div><div id="finExpenseList"></div></div>
+</div>
+<div class="finance-actions">
+<button class="outline" onclick="financeModal('income')">＋ 新增收入</button>
+<button class="outline expense-btn" onclick="financeModal('expense')">＋ 新增支出</button>
+</div>
+<div class="finance-cycle">發薪日：每月 <span id="salaryDayLabel">5</span> 日　｜　週期：<span id="financePeriod2"></span> <button class="secondary" onclick="showPage('salary')">設定</button></div>
+
+<!-- 保留原有統計容器，供既有 render() 使用；不在首頁顯示 -->
+<div class="finance-hidden-data" aria-hidden="true">
+<div id="finIncomeList"></div><div id="finCats"></div><div id="finExpenseList"></div>
+</div>
 </div>
 </section>
 
@@ -97,16 +155,17 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 <section id="profile" class="page"><div class="card"><h2>基本資料</h2><div class="form-grid"><label>身高（cm）<input id="ph" type="number"></label><label>體重（kg）<input id="pw" type="number" step=".1"></label><label>年齡<input id="pa" type="number"></label><label>生理性別<select id="ps"><option value="">未提供</option><option value="male">男性</option><option value="female">女性</option></select></label><label class="full">活動量<select id="pac"><option value="sedentary">久坐</option><option value="normal">一般</option><option value="active">活動量高</option></select></label></div><div id="profilePreview" class="tip"></div><div class="modal-actions"><button class="primary" onclick="saveProfile()">儲存基本資料</button></div></div></section>
 <section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" onclick="saveSalary()">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v1.2.1</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v1.2.2</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
 
 <script>
-const KEY='health_manager_v121_final';
-let db=JSON.parse(localStorage.getItem(KEY)||'null')||{water:[],drinks:[],foods:[],bowel:[],weights:[],finance:[],profile:null,salaryDay:5};
+const KEY='health_manager_v122_final';
+const OLD_KEY='health_manager_v121_final';
+let db=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(OLD_KEY)||'null')||{water:[],drinks:[],foods:[],bowel:[],weights:[],finance:[],profile:null,salaryDay:5};
 const stool={1:'小石頭型',2:'結塊型',3:'裂紋型',4:'黃金型 ⭐',5:'軟塊型',6:'糊狀型',7:'水狀型'};
 const drinkNames={water:'白開水',unsweetTea:'無糖茶',sweetTea:'含糖茶',coffee:'咖啡',milk:'奶類飲品',other:'其他'};
-const incomeCats=['薪資','獎金','其他收入'],expenseCats=['飲食','日用品','交通','房租','娛樂','醫療／保健','其他'];
+const incomeCats=['薪資','獎金','其他收入'],expenseCats=['飲食','刷卡','交通','家庭生活費','娛樂','投資','醫療','生活日用品','其他'];
 let editState={type:null,id:null};
 const $=id=>document.getElementById(id),uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8),today=()=>new Date().toISOString().slice(0,10);
 function nowTime(){const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
@@ -114,6 +173,9 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 function toast(s){$('toast').textContent=s;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),1600)}
 function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===id));render();scrollTo(0,0)}
+document.querySelectorAll('.nav').forEach(n=>n.addEventListener('click',()=>showPage(n.dataset.page)));
+document.addEventListener('toggle',e=>{if(e.target.matches('.finance-details')&&e.target.open)requestAnimationFrame(drawFinanceCharts)},true);
+window.addEventListener('resize',()=>{const d=document.querySelector('.finance-details');if(d&&d.open)drawFinanceCharts()});
 function day(type,d=today()){return db[type].filter(x=>x.date===d)}
 function waterGoal(){return db.profile?.weight?Math.max(1500,Math.round(db.profile.weight*32/50)*50):2000}
 function calorieGoal(){const p=db.profile;if(!p?.height||!p?.weight||!p?.age)return 2000;const b=10*p.weight+6.25*p.height-5*p.age+(p.sex==='male'?5:p.sex==='female'?-161:-78);return Math.round(b*({sedentary:1.2,normal:1.375,active:1.55}[p.activity||'normal'])/50)*50}
@@ -132,22 +194,66 @@ function saveBowel(){const x={id:editState.id||uid(),date:$('mdate').value,time:
 function weightModal(id=null){editState={type:'weight',id};const x=id?db.weights.find(v=>v.id===id):null;openModal(`<h2>${id?'編輯':'新增'}體重紀錄</h2><div class="form-grid"><label>日期<input id="mdate" type="date" value="${x?.date||today()}"></label><label>時間<input id="mtime" type="time" value="${x?.time||nowTime()}"></label><label>體重（kg）<input id="mweight" type="number" min="1" step=".1" value="${x?.weight??''}"></label><label>體脂（%）<input id="mbodyfat" type="number" min="0" step=".1" value="${x?.bodyfat??''}"></label><label class="full">備註<textarea id="mnote">${esc(x?.note||'')}</textarea></label></div><div class="modal-actions"><button class="secondary" onclick="closeModal()">取消</button><button class="primary" onclick="saveWeight()">儲存</button></div>`)}
 function saveWeight(){const x={id:editState.id||uid(),date:$('mdate').value,time:$('mtime').value,weight:Number($('mweight').value),bodyfat:$('mbodyfat').value===''?null:Number($('mbodyfat').value),note:$('mnote').value.trim()};if(!x.date||!x.time||x.weight<=0)return toast('請完整填寫體重紀錄');const i=db.weights.findIndex(v=>v.id===x.id);i>=0?db.weights[i]=x:db.weights.push(x);save();closeModal();render();toast('體重紀錄已更新')}
 function financeModal(kind,id=null){editState={type:'finance',id};const x=id?db.finance.find(v=>v.id===id):null;const cats=kind==='income'?incomeCats:expenseCats;openModal(`<h2>${id?'編輯':'新增'}${kind==='income'?'收入':'支出'}紀錄</h2><div class="form-grid"><label>日期<input id="mdate" type="date" value="${x?.date||today()}"></label><label>時間<input id="mtime" type="time" value="${x?.time||nowTime()}"></label><label class="full">項目<input id="mname" value="${esc(x?.name||'')}"></label><label>分類<select id="mcat">${cats.map(c=>`<option ${x?.category===c?'selected':''}>${c}</option>`).join('')}</select></label><label>金額（元）<input id="mamount" type="number" min="1" value="${x?.amount??''}"></label><label class="full">備註<textarea id="mnote">${esc(x?.note||'')}</textarea></label></div><div class="modal-actions"><button class="secondary" onclick="closeModal()">取消</button><button class="primary" onclick="saveFinance('${kind}')">儲存</button></div>`)}
-function saveFinance(kind){const old=editState.id?db.finance.find(v=>v.id===editState.id):null;const x={id:editState.id||uid(),kind,date:$('mdate').value,time:$('mtime').value,name:$('mname').value.trim(),category:$('mcat').value,amount:Number($('mamount').value),note:$('mnote').value.trim(),sourceType:old?.sourceType||null,sourceId:old?.sourceId||null};if(!x.date||!x.time||!x.name||x.amount<=0)return toast('請完整填寫收支紀錄');const i=db.finance.findIndex(v=>v.id===x.id);i>=0?db.finance[i]=x:db.finance.push(x);save();closeModal();render();toast('收支紀錄已更新')}
+function saveFinance(kind){const old=editState.id?db.finance.find(v=>v.id===editState.id):null;const x={id:editState.id||uid(),kind,date:$('mdate').value,time:$('mtime').value,name:$('mname').value.trim(),category:$('mcat').value,amount:Number($('mamount').value),note:$('mnote').value.trim(),sourceType:old?.sourceType||null,sourceId:old?.sourceId||null};if(!x.date||!x.time||!x.name||x.amount<=0)return toast('請完整填寫收支紀錄');const i=db.finance.findIndex(v=>v.id===x.id);i>=0?db.finance[i]=x:db.finance.push(x);save();closeModal();render();toast(editState.id?'收支紀錄已更新':'收支紀錄已新增')}
 function syncExpense(sourceType,r){const old=db.finance.find(x=>x.sourceType===sourceType&&x.sourceId===r.id);if(r.price==null){if(old)db.finance=db.finance.filter(x=>x.id!==old.id);return}const x={id:old?.id||uid(),kind:'expense',category:'飲食',name:sourceType==='drink'?drinkNames[r.type]:r.name,amount:Number(r.price),date:r.date,time:r.time,note:'由健康紀錄同步',sourceType,sourceId:r.id};if(old)Object.assign(old,x);else db.finance.push(x)}
 function del(type,id){if(!confirm('確定要刪除這筆紀錄嗎？'))return;if(type==='finance')db.finance=db.finance.filter(x=>x.id!==id);else{db[type]=db[type].filter(x=>x.id!==id);if(type==='drinks'||type==='foods'){const s=type==='drinks'?'drink':'food';db.finance=db.finance.filter(x=>!(x.sourceType===s&&x.sourceId===id))}}save();render();toast('紀錄已刪除')}
 function acts(type,id){return `<span class="row-actions"><button class="mini-edit" onclick="editRecord('${type}','${id}')">編輯</button><button class="mini-del" onclick="del('${type}','${id}')">刪除</button></span>`}
 function editRecord(type,id){if(type==='water')return waterModal(id);if(type==='drinks')return drinkModal(id);if(type==='foods')return foodModal(id);if(type==='bowel')return bowelModal(id);if(type==='weights')return weightModal(id);const x=db.finance.find(v=>v.id===id);if(x)financeModal(x.kind,id)}
 function toggleBowel(){$('bowelPanel').classList.toggle('open')}
-function render(){const n=new Date();$('todayText').textContent=`${n.getFullYear()}/${String(n.getMonth()+1).padStart(2,'0')}/${String(n.getDate()).padStart(2,'0')}（${'日一二三四五六'[n.getDay()]}）`;const wg=waterGoal(),cg=calorieGoal(),dr=day('drinks'),fo=day('foods'),bo=day('bowel'),we=day('weights');const water=dr.reduce((s,x)=>s+Number(x.amount||0),0),cal=dr.reduce((s,x)=>s+Number(x.cal||0),0)+fo.reduce((s,x)=>s+Number(x.cal||0),0);$('waterTotal').textContent=water.toLocaleString();$('waterGoal').textContent=wg.toLocaleString();$('waterMini').style.width=Math.min(100,water/wg*100)+'%';$('waterPct').textContent=Math.round(water/wg*100)+'%';$('calTotal').textContent=cal.toLocaleString();$('calGoal').textContent=cg.toLocaleString();$('calMini').style.width=Math.min(100,cal/cg*100)+'%';$('calPct').textContent=Math.round(cal/cg*100)+'%';$('waterHero').textContent=water.toLocaleString();$('waterHeroGoal').textContent=wg.toLocaleString();$('waterHeroBar').style.width=Math.min(100,water/wg*100)+'%';$('waterRemain').textContent=`剩餘 ${Math.max(0,wg-water).toLocaleString()} mL`;$('calHero').textContent=cal.toLocaleString();$('calHeroGoal').textContent=cg.toLocaleString();$('calHeroBar').style.width=Math.min(100,cal/cg*100)+'%';$('calRemain').textContent=Math.max(0,cg-cal).toLocaleString();$('bowelCount').textContent=bo.length;$('bsummaryCount').textContent=bo.length;const lb=bo.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time))[0];$('bowelTime').textContent=lb?.time||'--:--';$('bowelTypeMini').textContent=lb?`型態：${lb.type}（${stool[lb.type]}）`:'尚無紀錄';$('bowelQtyMini').textContent=lb?.qty||'--';$('bsummaryLatest').textContent=lb?`最近一次：${lb.time}（型態 ${lb.type}，${lb.qty||'未填寫'}）`:'尚無紀錄';$('weightNow').textContent=we.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time))[0]?.weight??'--';renderLists();renderCharts();renderFinance();loadProfile();const r=period(),range=`${String(r.s.getMonth()+1).padStart(2,'0')}/${String(r.s.getDate()).padStart(2,'0')} ～ ${String(r.e.getMonth()+1).padStart(2,'0')}/${String(r.e.getDate()).padStart(2,'0')}`;$('financePeriod').textContent=range;$('financePeriod2').textContent=range;$('sidePeriod').textContent=range;$('salaryDayLabel').textContent=db.salaryDay||5;$('sideRemain').textContent='尚餘 '+Math.max(0,Math.ceil((r.e-new Date())/86400000))+' 天';if($('salaryInput'))$('salaryInput').value=db.salaryDay||5}
+
+function financePeriodRange(){
+  const now=new Date(), day=Number(db.salaryDay||5);
+  let y=now.getFullYear(),m=now.getMonth(),start,end;
+  if(now.getDate()>=day){start=new Date(y,m,day);end=new Date(y,m+1,day-1,23,59,59)}
+  else{start=new Date(y,m-1,day);end=new Date(y,m,day-1,23,59,59)}
+  return {start,end};
+}
+function drawFinanceCharts(){
+  const trend=document.getElementById('financeTrendChart'), cat=document.getElementById('financeCategoryChart'), stats=document.getElementById('financeStats');
+  if(!trend||!cat||!stats)return;
+  const range=financePeriodRange(), start=range.start, end=range.end;
+  const days=[]; let d=new Date(start);
+  while(d<=end){days.push(new Date(d));d.setDate(d.getDate()+1)}
+  // Keep charts readable for very long salary cycles while retaining every available day.
+  const maxDays=31;
+  const labels=days.length>maxDays?days.slice(-maxDays):days;
+  const fmt=d=>String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
+  const inc=labels.map(x=>db.finance.filter(r=>r.kind==='income'&&new Date(r.date+'T'+(r.time||'00:00'))>=x&&new Date(r.date+'T'+(r.time||'00:00'))<new Date(x.getTime()+86400000)).reduce((s,r)=>s+Number(r.amount||0),0));
+  const exp=labels.map(x=>db.finance.filter(r=>r.kind==='expense'&&new Date(r.date+'T'+(r.time||'00:00'))>=x&&new Date(r.date+'T'+(r.time||'00:00'))<new Date(x.getTime()+86400000)).reduce((s,r)=>s+Number(r.amount||0),0));
+  function setup(c){const ctx=c.getContext('2d'),w=c.clientWidth*devicePixelRatio,h=c.clientHeight*devicePixelRatio;c.width=w;c.height=h;ctx.scale(devicePixelRatio,devicePixelRatio);return [ctx,c.clientWidth,c.clientHeight]}
+  function lineChart(c){
+    const [ctx,w,h]=setup(c), pad={l:34,r:10,t:16,b:24}, max=Math.max(1,...inc,...exp), xstep=(w-pad.l-pad.r)/Math.max(1,labels.length-1);
+    ctx.clearRect(0,0,w,h);ctx.strokeStyle='#e7edf3';ctx.lineWidth=1;
+    for(let i=0;i<4;i++){const y=pad.t+(h-pad.t-pad.b)*i/3;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
+    function path(vals){ctx.beginPath();vals.forEach((v,i)=>{const x=pad.l+i*xstep,y=h-pad.b-(v/max)*(h-pad.t-pad.b);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()}
+    ctx.lineWidth=2;ctx.strokeStyle='#168a56';path(inc);ctx.strokeStyle='#df4d48';path(exp);
+    ctx.fillStyle='#6d7b8a';ctx.font='9px sans-serif';labels.forEach((x,i)=>{if(labels.length<=10||i%Math.ceil(labels.length/7)===0){ctx.fillText(fmt(x),pad.l+i*xstep-10,h-7)}})
+    ctx.fillText('收入',w-62,11);ctx.fillText('支出',w-28,11)
+  }
+  function barChart(c){
+    const [ctx,w,h]=setup(c), pad={l:32,r:8,t:14,b:28};
+    const cats={};db.finance.filter(r=>r.kind==='expense').forEach(r=>{const dt=new Date(r.date+'T'+(r.time||'00:00'));if(dt>=start&&dt<=end)cats[r.category||'其他']=(cats[r.category||'其他']||0)+Number(r.amount||0)});
+    const arr=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,7), max=Math.max(1,...arr.map(x=>x[1])), bw=(w-pad.l-pad.r)/Math.max(1,arr.length)*.6;
+    ctx.clearRect(0,0,w,h);ctx.font='9px sans-serif';ctx.fillStyle='#6d7b8a';
+    arr.forEach((x,i)=>{const cx=pad.l+(i+.5)*(w-pad.l-pad.r)/arr.length,bh=(x[1]/max)*(h-pad.t-pad.b);ctx.fillRect(cx-bw/2,h-pad.b-bh,bw,bh);ctx.fillText(x[0].slice(0,5),cx-13,h-9);ctx.fillText('$'+Math.round(x[1]),cx-14,h-pad.b-bh-3)});
+    if(!arr.length)ctx.fillText('目前沒有支出資料',pad.l,h/2);
+  }
+  lineChart(trend);barChart(cat);
+  const income=inc.reduce((a,b)=>a+b,0), expense=exp.reduce((a,b)=>a+b,0);
+  stats.innerHTML='<div class="finance-stats-row"><span>收入筆數</span><b>'+db.finance.filter(r=>r.kind==='income').length+'</b></div><div class="finance-stats-row"><span>支出筆數</span><b>'+db.finance.filter(r=>r.kind==='expense').length+'</b></div><div class="finance-stats-row"><span>平均每日支出</span><b>$'+Math.round(expense/Math.max(1,labels.length))+'</b></div><div class="finance-stats-row"><span>儲蓄率</span><b>'+ (income?Math.round((income-expense)/income*100):0) +'%</b></div>';
+}
+
+function render(){const n=new Date();$('todayText').textContent=`${n.getFullYear()}/${String(n.getMonth()+1).padStart(2,'0')}/${String(n.getDate()).padStart(2,'0')}（${'日一二三四五六'[n.getDay()]}）`;const wg=waterGoal(),cg=calorieGoal(),dr=day('drinks'),fo=day('foods'),bo=day('bowel'),we=day('weights');const water=day('water').reduce((s,x)=>s+Number(x.amount||0),0)+dr.reduce((s,x)=>s+Number(x.amount||0),0),cal=dr.reduce((s,x)=>s+Number(x.cal||0),0)+fo.reduce((s,x)=>s+Number(x.cal||0),0);$('waterTotal').textContent=water.toLocaleString();$('waterGoal').textContent=wg.toLocaleString();$('waterMini').style.width=Math.min(100,water/wg*100)+'%';$('waterPct').textContent=Math.round(water/wg*100)+'%';$('calTotal').textContent=cal.toLocaleString();$('calGoal').textContent=cg.toLocaleString();$('calMini').style.width=Math.min(100,cal/cg*100)+'%';$('calPct').textContent=Math.round(cal/cg*100)+'%';$('waterHero').textContent=water.toLocaleString();$('waterHeroGoal').textContent=wg.toLocaleString();$('waterHeroBar').style.width=Math.min(100,water/wg*100)+'%';$('waterRemain').textContent=`剩餘 ${Math.max(0,wg-water).toLocaleString()} mL`;$('calHero').textContent=cal.toLocaleString();$('calHeroGoal').textContent=cg.toLocaleString();$('calHeroBar').style.width=Math.min(100,cal/cg*100)+'%';$('calRemain').textContent=Math.max(0,cg-cal).toLocaleString();$('bowelCount').textContent=bo.length;$('bsummaryCount').textContent=bo.length;const lb=bo.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time))[0];$('bowelTime').textContent=lb?.time||'--:--';$('bowelTypeMini').textContent=lb?`型態：${lb.type}（${stool[lb.type]}）`:'尚無紀錄';$('bowelQtyMini').textContent=lb?.qty||'--';$('bsummaryLatest').textContent=lb?`最近一次：${lb.time}（型態 ${lb.type}，${lb.qty||'未填寫'}）`:'尚無紀錄';$('weightNow').textContent=we.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time))[0]?.weight??'--';renderLists();renderCharts();renderFinance();loadProfile();const r=period(),range=`${String(r.s.getMonth()+1).padStart(2,'0')}/${String(r.s.getDate()).padStart(2,'0')} ～ ${String(r.e.getMonth()+1).padStart(2,'0')}/${String(r.e.getDate()).padStart(2,'0')}`;$('financePeriod').textContent=range;$('financePeriod2').textContent=range;$('sidePeriod').textContent=range;$('salaryDayLabel').textContent=db.salaryDay||5;$('sideRemain').textContent='尚餘 '+Math.max(0,Math.ceil((r.e-new Date())/86400000))+' 天';if($('salaryInput'))$('salaryInput').value=db.salaryDay||5}
 function renderLists(){const d=day('drinks').slice().sort((a,z)=>z.time.localeCompare(a.time)),f=day('foods').slice().sort((a,z)=>z.time.localeCompare(a.time));$('todayDrinkList').innerHTML=d.length?d.slice(0,5).map(x=>`<div class="row"><span>🥤</span><span class="grow">${esc(drinkNames[x.type])}<small class="muted"> ${x.amount} mL · ${x.cal||0} kcal · ${x.time}</small></span><b class="price">${x.price==null?'':'$'+Number(x.price).toLocaleString()}</b>${acts('drinks',x.id)}</div>`).join(''):'<div class="muted">今天尚無飲品紀錄</div>';$('todayFoodList').innerHTML=f.length?f.slice(0,5).map(x=>`<div class="row"><span>🍴</span><span class="grow">${esc(x.name)}<small class="muted"> ${esc(x.portion)} · ${x.cal||0} kcal · ${x.time}</small></span><b class="price">${x.price==null?'':'$'+Number(x.price).toLocaleString()}</b>${acts('foods',x.id)}</div>`).join(''):'<div class="muted">今天尚無食物紀錄</div>';$('bowelDetail').innerHTML=lastB()?`<div class="row"><span>最近型態</span><b>${lastB()}</b></div><div class="row"><span>排便量</span><b>${day('bowel').slice().sort((a,z)=>z.time.localeCompare(a.time))[0].qty}</b></div>`:'<div class="muted">尚無排便紀錄</div>';$('bowelTodayList').innerHTML=day('bowel').slice().sort((a,z)=>z.time.localeCompare(a.time)).map(x=>`<div class="row"><span>${x.time}</span><span class="grow">第 ${x.type} 型｜${stool[x.type]} · ${x.qty}</span>${acts('bowel',x.id)}</div>`).join('')||'<div class="muted">今天尚無紀錄</div>';$('waterTable').innerHTML=table(db.water.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),x=>[x.date+' '+x.time,'補水',x.amount+' mL',acts('water',x.id)]);$('drinkTable').innerHTML=table(db.drinks.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),x=>[x.date+' '+x.time,drinkNames[x.type],`${x.amount} mL / ${x.cal||0} kcal`,acts('drinks',x.id)]);$('foodTable').innerHTML=table(db.foods.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),x=>[x.date+' '+x.time,x.name,`${x.portion||'—'} / ${x.cal||0} kcal`,acts('foods',x.id)]);$('bowelTable').innerHTML=table(db.bowel.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),x=>[x.date,x.time+`｜第 ${x.type} 型`,`${stool[x.type]} / ${x.qty}`,acts('bowel',x.id)]);$('weightTable').innerHTML=table(db.weights.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),x=>[x.date,x.time,`${x.weight} kg${x.bodyfat!=null?' / 體脂 '+x.bodyfat+'%':''}`,acts('weights',x.id)]);$('incomeTable').innerHTML=financeTable('income');$('expenseTable').innerHTML=financeTable('expense')}
 function lastB(){const b=day('bowel').slice().sort((a,z)=>z.time.localeCompare(a.time))[0];return b?`第 ${b.type} 型｜${stool[b.type]}`:''}
 function table(a,row){return '<div class="table"><div class="thead"><div>日期／時間</div><div>項目</div><div>內容</div><div>操作</div></div>'+(a.length?a.map(x=>{const r=row(x);return `<div class="row"><div>${r[0]}</div><div>${esc(r[1])}</div><div>${esc(r[2])}</div><div class="right">${r[3]}</div></div>`}).join(''):'<div class="row"><div>尚無紀錄</div></div>')+'</div>'}
 function financeTable(kind){const a=db.finance.filter(x=>x.kind===kind).sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time));return '<div class="table"><div class="thead"><div>日期／時間</div><div>項目</div><div>分類／金額</div><div>操作</div></div>'+(a.length?a.map(x=>`<div class="row"><div>${x.date}<br>${x.time}</div><div>${esc(x.name)}</div><div>${esc(x.category)}<br>$${Number(x.amount).toLocaleString()}</div><div class="right">${acts('finance',x.id)}</div></div>`).join(''):'<div class="row"><div>尚無紀錄</div></div>')+'</div>'}
-function renderCharts(){const a=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const k=fd(d);a.push({w:day('drinks',k).reduce((s,x)=>s+Number(x.amount||0),0),c:day('drinks',k).reduce((s,x)=>s+Number(x.cal||0),0)+day('foods',k).reduce((s,x)=>s+Number(x.cal||0),0),wt:day('weights',k).slice(-1)[0]?.weight||0,b:day('bowel',k).length})}for(const [id,key] of [['waterChart','w'],['calChart','c'],['weightChart','wt'],['bowelChart','b']]){const max=Math.max(1,...a.map(x=>x[key]));$(id).innerHTML=a.map(x=>`<i style="height:${Math.max(3,x[key]/max*92)}%"></i>`).join('')}}
+function renderCharts(){const a=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const k=fd(d);a.push({w:day('water',k).reduce((s,x)=>s+Number(x.amount||0),0)+day('drinks',k).reduce((s,x)=>s+Number(x.amount||0),0),c:day('drinks',k).reduce((s,x)=>s+Number(x.cal||0),0)+day('foods',k).reduce((s,x)=>s+Number(x.cal||0),0),wt:day('weights',k).slice(-1)[0]?.weight||0,b:day('bowel',k).length})}for(const [id,key] of [['waterChart','w'],['calChart','c'],['weightChart','wt'],['bowelChart','b']]){const max=Math.max(1,...a.map(x=>x[key]));$(id).innerHTML=a.map(x=>`<i style="height:${Math.max(3,x[key]/max*92)}%"></i>`).join('')}}
 function renderFinance(){const t=money();$('finIncome').textContent='+ $'+t.in.toLocaleString();$('finExpense').textContent='- $'+t.out.toLocaleString();$('finBalance').textContent='$'+(t.in-t.out).toLocaleString();const a=db.finance.filter(inPeriod).sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time));$('finIncomeList').innerHTML=a.filter(x=>x.kind==='income').slice(0,4).map(x=>`<div class="row"><span class="grow">${esc(x.name)}<small class="muted"> ${x.date.slice(5)} ${x.time}</small></span><b class="income">+$${Number(x.amount).toLocaleString()}</b>${acts('finance',x.id)}</div>`).join('')||'<div class="muted">尚無收入</div>';$('finExpenseList').innerHTML=a.filter(x=>x.kind==='expense').slice(0,4).map(x=>`<div class="row"><span class="grow">${esc(x.name)}<small class="muted"> ${x.date.slice(5)} ${x.time}</small></span><b class="expense">-$${Number(x.amount).toLocaleString()}</b>${acts('finance',x.id)}</div>`).join('')||'<div class="muted">尚無支出</div>';const m={};a.filter(x=>x.kind==='expense').forEach(x=>m[x.category]=(m[x.category]||0)+Number(x.amount));$('finCats').innerHTML=Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="row"><span>${esc(k)}</span><b>$${v.toLocaleString()}</b></div>`).join('')||'<div class="muted">尚無支出</div>'}
 function loadProfile(){if($('ph')){$('ph').value=db.profile?.height||'';$('pw').value=db.profile?.weight||'';$('pa').value=db.profile?.age||'';$('ps').value=db.profile?.sex||'';$('pac').value=db.profile?.activity||'normal';$('profilePreview').textContent=db.profile?`BMI ${(db.profile.weight/(db.profile.height/100)**2).toFixed(1)}　｜　補水參考 ${waterGoal().toLocaleString()} mL／日　｜　熱量參考 ${calorieGoal().toLocaleString()} kcal／日`:'填寫基本資料後會計算參考值。'}}
 function saveProfile(){const x={height:Number($('ph').value),weight:Number($('pw').value),age:Number($('pa').value),sex:$('ps').value,activity:$('pac').value};if(!x.height||!x.weight||!x.age)return toast('請填寫身高、體重與年齡');db.profile=x;save();render();toast('基本資料已保存')}
 function saveSalary(){db.salaryDay=Math.min(28,Math.max(1,Number($('salaryInput').value||5)));save();render();toast('發薪日已更新')}
 render();
+setTimeout(()=>{const d=document.querySelector('.finance-details');if(d&&d.open)drawFinanceCharts()},100);
 </script>
 </body></html>
