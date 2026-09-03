@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v1.2.6</title>
+<title>健康管家 v1.2.7</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -730,11 +730,47 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 }
 </style>
 
+
+<style>
+.sidebar-current-user{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin:2px 14px 12px;
+  padding:8px 10px;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:10px;
+  background:rgba(255,255,255,.06);
+  color:#dce8f4;
+  font-size:10px;
+  font-weight:800;
+  cursor:pointer;
+}
+.sidebar-current-user:hover{background:rgba(255,255,255,.1)}
+.sidebar-user-dot{
+  color:#69c5a0;
+  font-size:8px;
+}
+@media(max-width:720px){
+  .sidebar-current-user{
+    margin:0 8px;
+    padding:7px 9px;
+    flex:0 0 auto;
+    white-space:nowrap;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="app">
 <aside class="sidebar">
-<div class="brand"><div class="brand-icon">💧</div><div>健康管家<small>v1.2.6</small></div></div>
+<div class="brand"><div class="brand-icon">💧</div>
+<div class="sidebar-current-user" onclick="showPage('profile')" title="前往使用者管理">
+  <span class="sidebar-user-dot">●</span>
+  <span id="sidebarCurrentUser">使用者 1</span>
+</div>
+<div>健康管家<small>v1.2.6</small></div></div>
 <button class="nav active" data-page="dashboard">🏠 <span>首頁總覽</span></button>
 <div class="navgroup">健康記錄</div><button class="nav" data-page="water">💧 <span>補水紀錄</span></button><button class="nav" data-page="drink">🥤 <span>飲品紀錄</span></button><button class="nav" data-page="food">🍴 <span>食物紀錄</span></button><button class="nav" data-page="bowel">🚽 <span>排便紀錄</span></button><button class="nav" data-page="weight">⚖️ <span>體重紀錄</span></button>
 <div class="navgroup">數據分析</div><button class="nav" data-page="trends">📈 <span>健康趨勢</span></button><button class="nav" data-page="calories">📊 <span>熱量分析</span></button>
@@ -1368,14 +1404,25 @@ const DEFAULT_USER_ID='user_1';
 
 function getUserIndex(){
   try{
-    return JSON.parse(localStorage.getItem(USER_INDEX_KEY)||'null') || [
-      {id:DEFAULT_USER_ID,name:'使用者 1'}
-    ];
+    const raw=localStorage.getItem(USER_INDEX_KEY);
+    if(raw){
+      const list=JSON.parse(raw);
+      if(Array.isArray(list)&&list.length)return list;
+    }
+
+    // 第一次啟用多使用者時，把舊版單一使用者資料保留為「使用者 1」。
+    const legacy=localStorage.getItem(KEY)||localStorage.getItem(OLD_KEY);
+    const list=[{id:DEFAULT_USER_ID,name:'使用者 1'}];
+    localStorage.setItem(USER_INDEX_KEY,JSON.stringify(list));
+
+    if(legacy && !localStorage.getItem(userKey(DEFAULT_USER_ID))){
+      localStorage.setItem(userKey(DEFAULT_USER_ID),legacy);
+    }
+    return list;
   }catch(e){
     return [{id:DEFAULT_USER_ID,name:'使用者 1'}];
   }
 }
-
 function saveUserIndex(list){
   localStorage.setItem(USER_INDEX_KEY,JSON.stringify(list));
 }
@@ -1424,18 +1471,27 @@ function loadUserData(id){
 
 function renderUserSwitcher(){
   const list=getUserIndex();
-  const current=getCurrentUserId();
+  let current=getCurrentUserId();
+
+  if(!list.some(u=>u.id===current)){
+    current=list[0].id;
+    setCurrentUserId(current);
+  }
+
   const select=$('userSelect');
   if(select){
     select.innerHTML=list.map(u=>
       `<option value="${u.id}">${u.name}</option>`
     ).join('');
-    select.value=list.some(u=>u.id===current)?current:list[0].id;
+    select.value=current;
   }
-  const u=list.find(x=>x.id===current)||list[0];
-  if($('currentUserBadge'))$('currentUserBadge').textContent=u?.name||'使用者 1';
-}
 
+  const u=list.find(x=>x.id===current)||list[0];
+  const name=u?.name||'使用者 1';
+
+  if($('currentUserBadge'))$('currentUserBadge').textContent=name;
+  if($('sidebarCurrentUser'))$('sidebarCurrentUser').textContent=name;
+}
 function switchUser(id){
   if(!id)return;
   setCurrentUserId(id);
@@ -1447,20 +1503,29 @@ function switchUser(id){
 }
 
 function addUser(){
-  const name=prompt('請輸入使用者名稱，例如：爸爸、媽媽、自己');
+  const name=prompt('請輸入使用者名稱，例如：自己、爸爸、媽媽');
   if(!name || !name.trim())return;
+
+  const cleanName=name.trim();
   const list=getUserIndex();
-  const id='user_'+Date.now();
-  list.push({id,name:name.trim()});
+
+  if(list.some(u=>u.name===cleanName)){
+    return toast('已有相同名稱的使用者');
+  }
+
+  const id='user_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+  list.push({id,name:cleanName});
   saveUserIndex(list);
+
   setCurrentUserId(id);
   loadUserData(id);
   loadProfile();
+  renderUserSwitcher();
   render();
   renderUserSwitcher();
-  toast('已新增 '+name.trim());
+  showPage('profile');
+  toast('已新增「'+cleanName+'」，目前使用者已切換為 '+cleanName);
 }
-
 function clearCurrentUser(){
   const current=getCurrentUserId();
   const list=getUserIndex();
@@ -1510,7 +1575,6 @@ function saveProfile(){
 function saveSalary(){db.salaryDay=Math.min(28,Math.max(1,Number($('salaryInput').value||5)));save();render();toast('發薪日已更新')}
 loadUserData(getCurrentUserId());
 renderUserSwitcher();
-
 render();
 setTimeout(renderAnalysisPages,50);
 setTimeout(()=>{const d=document.querySelector('.finance-details');if(d&&d.open)drawFinanceCharts()},100);
