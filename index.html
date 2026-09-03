@@ -119,6 +119,71 @@ body{background:linear-gradient(135deg,#f3f8fd 0%,#f9fbfd 55%,#f5f8fc 100%);font
 @media(max-width:700px){.v127-quick-top .quickgrid{grid-template-columns:repeat(3,1fr)}.v127-fin-cards{grid-template-columns:1fr}.v127-fin-row{grid-template-columns:24px 1fr auto}}
 
 </style>
+<style>
+/* v1.2.8 排便狀況縮放展開 */
+.v128-bowel-accordion{
+  margin-top:0;
+  border:1px solid #cde8d5;
+  background:linear-gradient(135deg,#fff,#f7fff9);
+  border-radius:16px;
+  overflow:hidden;
+}
+.v128-bowel-accordion summary{
+  list-style:none;
+  cursor:pointer;
+  padding:15px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  user-select:none;
+}
+.v128-bowel-accordion summary::-webkit-details-marker{display:none}
+.v128-bowel-summary-title{display:flex;align-items:center;gap:9px}
+.v128-bowel-summary-title h3{margin:0;color:#238b4f;font-size:16px}
+.v128-bowel-summary-meta{font-size:12px;color:#718078}
+.v128-bowel-chevron{
+  width:28px;height:28px;border-radius:50%;
+  display:grid;place-items:center;
+  background:#edf8f0;color:#238b4f;font-weight:800;
+  transition:transform .18s ease;
+}
+.v128-bowel-accordion[open] .v128-bowel-chevron{transform:rotate(180deg)}
+.v128-bowel-panel{
+  padding:0 16px 16px;
+  border-top:1px solid #e0efe4;
+}
+.v128-bowel-panel .bsummary{margin-top:14px}
+.v128-bowel-history{
+  margin-top:12px;
+  border:1px solid #e4ebe7;
+  border-radius:11px;
+  overflow:hidden;
+}
+.v128-bowel-history-title{
+  padding:10px 12px;background:#f8fbf9;
+  font-size:12px;font-weight:800;color:#5e6e66;
+}
+.v128-bowel-record{
+  display:grid;
+  grid-template-columns:64px 1fr auto;
+  gap:10px;align-items:center;
+  padding:10px 12px;border-top:1px solid #edf2ee;
+  font-size:12px;
+}
+.v128-bowel-record small{color:#7b8882}
+.v128-bowel-qty{
+  justify-self:end;padding:4px 8px;border-radius:999px;
+  background:#eef7f0;color:#31804d;font-size:11px;font-weight:700;
+}
+.v128-bowel-actions{display:flex;gap:9px;margin-top:12px}
+.v128-bowel-actions .outline{flex:1}
+@media(max-width:650px){
+  .v128-bowel-summary-meta{display:none}
+  .v128-bowel-record{grid-template-columns:52px 1fr}
+  .v128-bowel-qty{grid-column:2;justify-self:start}
+}
+</style>
 </head>
 <body>
 <div class="app"><aside class="side"><div class="brand"><div class="drop">💧</div><h1>健康管家</h1><p>補水・飲食・腸道</p></div><nav class="nav"><button class="active" data-page="dashboard"><span class="ico">⌂</span><span>首頁儀表板</span></button><button data-page="drinks"><span class="ico">🥤</span><span>飲品紀錄</span></button><button data-page="foods"><span class="ico">🍴</span><span>食品紀錄</span></button><button data-page="bowel"><span class="ico">💩</span><span>排便紀錄</span></button><button data-page="trend"><span class="ico">⌁</span><span>7 日趨勢</span></button><button data-page="insight"><span class="ico">♡</span><span>健康觀察</span></button><button data-page="profile"><span class="ico">♙</span><span>基本資料</span></button><div class="v127-finance-nav"><div class="nav-label">財務記帳</div>
@@ -152,9 +217,33 @@ body{background:linear-gradient(135deg,#f3f8fd 0%,#f9fbfd 55%,#f5f8fc 100%);font
     <button class="outline orange" onclick="openFinanceModal('expense')">＋ 記錄支出</button>
   </div>
 </div>
-<div class="grid"><div class="card section bowel"><div class="head"><h3>🟢 今日排便概況</h3><a onclick="showPage('bowel')">查看全部 ›</a></div><div class="bsummary"><div class="bcell"><small>今日次數</small><strong id="bcount">0 次</strong><span>持續追蹤變化</span></div><div class="bcell"><small>最近一次</small><strong id="btime">--:--</strong><span id="btype">尚無紀錄</span></div></div><button class="toggle" onclick="document.getElementById('bhistory').classList.toggle('open')">查看排便紀錄⌄</button><div id="bhistory" class="history"></div></div>
+<div class="grid"><details class="v128-bowel-accordion">
+  <summary>
+    <div class="v128-bowel-summary-title">
+      <span>🟢</span>
+      <div>
+        <h3>排便狀況</h3>
+        <div class="v128-bowel-summary-meta"><span id="v128BowelMeta">今日 0 次</span> · 點擊展開查看型態、排便量與歷史紀錄</div>
+      </div>
+    </div>
+    <span class="v128-bowel-chevron">⌄</span>
+  </summary>
+  <div class="v128-bowel-panel">
+    <div class="bsummary">
+      <div class="bcell"><small>今日次數</small><strong id="bcount">0 次</strong><span>持續追蹤變化</span></div>
+      <div class="bcell"><small>最近一次</small><strong id="btime">--:--</strong><span id="btype">尚無紀錄</span></div>
+    </div>
+    <div class="v128-bowel-history">
+      <div class="v128-bowel-history-title">今日排便歷史</div>
+      <div id="bhistory"></div>
+    </div>
+    <div class="v128-bowel-actions">
+      <button class="outline" onclick="bowelModal()">＋ 新增排便紀錄</button>
+      <button class="secondary" onclick="showPage('bowel')">查看完整紀錄 ›</button>
+    </div>
+  </div>
+</details>
 <div class="card section"><div class="head"><h3 style="color:#1478d2">🥤 最近飲品紀錄</h3><a onclick="showPage('drinks')">查看全部 ›</a></div><div class="table" id="recentD"></div><div class="actions"><button class="outline" onclick="drinkModal()">＋ 新增飲品紀錄</button></div></div>
-<div class="card section"><div class="head"><h3 style="color:#7655c9">💩 最近排便紀錄</h3><a onclick="showPage('bowel')">查看全部 ›</a></div><div class="table" id="recentB"></div><div class="actions"><button class="outline" onclick="bowelModal()">＋ 新增排便紀錄</button></div></div>
 <div class="card section"><div class="head"><h3 style="color:#ec7c0c">🍚 最近食品紀錄</h3><a onclick="showPage('foods')">查看全部 ›</a></div><div class="table" id="recentF"></div><div class="actions"><button class="outline orange" onclick="foodModal()">＋ 新增食品紀錄</button></div></div></div>
 <div class="grid"><div class="card chart"><div class="head"><h3 style="color:#1478d2">⌁ 7 日補水趨勢</h3><a onclick="showPage('trend')">查看圖表 ›</a></div><div class="bars" id="bars"></div></div><div class="card chart"><div class="head"><h3 style="color:#ed7c0b">🔥 今日熱量組成</h3><a>查看詳情 ›</a></div><div class="donutwrap"><div style="position:relative"><div class="donut" id="donut"></div><div class="dc"><strong id="dtot">0</strong> kcal<br>總計</div></div><div class="legend"><div><i class="dot fd"></i>食品 <b id="lf">0</b> kcal</div><div><i class="dot dd"></i>飲品 <b id="ld">0</b> kcal</div><small>* 包含所有已記錄食品與飲品</small></div></div></div></div>
 <div class="card quick"><h3>快速記錄</h3><div class="quickgrid"><button onclick="drinkModal()"><b>💧 記錄飲品</b><span>快速新增液體攝取</span></button><button onclick="foodModal()"><b>🍴 記錄食品</b><span>快速新增食品熱量</span></button><button onclick="bowelModal()"><b>🚽 記錄排便</b><span>快速新增排便事件</span></button><button onclick="showPage('insight')"><b>📋 健康觀察</b><span>查看目前身體狀況</span></button></div></div></section>
@@ -198,7 +287,17 @@ const $=id=>document.getElementById(id),today=()=>{let d=new Date();return d.toI
 function save(){localStorage.setItem(RK,JSON.stringify(s))}function toast(x){$('toast').textContent=x;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),1700)}function showPage(id){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));if(id==='profile')loadProfile();render();scrollTo(0,0)}document.querySelectorAll('.nav button').forEach(x=>x.onclick=()=>showPage(x.dataset.page));
 function wt(){return p?.weight?Math.max(1500,Math.round(p.weight*32/50)*50):2000}function ct(){if(!p?.weight||!p?.height||!p?.age)return 2000;let b=10*p.weight+6.25*p.height-5*p.age+(p.sex==='male'?5:p.sex==='female'?-161:-78);return Math.round(b*({sedentary:1.2,normal:1.375,active:1.55}[p.activity||'normal'])/50)*50}function arr(type,date=today()){return s[type].filter(x=>x.date===date)}function totals(){let d=arr('drinks'),f=arr('foods');return{water:d.reduce((a,x)=>a+ +x.amount,0),dc:d.reduce((a,x)=>a+ +x.cal,0),fc:f.reduce((a,x)=>a+ +x.cal,0)}}function stoolIcon(t){return t<=2?'🫘':t<=4?'💩':t<=5?'🟤':'💧'}
 function render(){let n=new Date();$('today').textContent=`📅 ${n.getFullYear()} / ${String(n.getMonth()+1).padStart(2,'0')} / ${String(n.getDate()).padStart(2,'0')}`;$('pname').textContent=p?.weight?`${p.weight} kg`:'我的資料';let W=wt(),C=ct(),t=totals(),cal=t.fc+t.dc,wp=Math.round(t.water/W*100),cp=Math.round(cal/C*100);$('water').textContent=t.water.toLocaleString();$('wtar').textContent=W.toLocaleString();$('wremain').textContent=`剩餘 ${Math.max(0,W-t.water).toLocaleString()} mL`;$('wpct').textContent=wp+'%';$('wmini').style.width=Math.min(100,wp)+'%';$('wfill').style.width=Math.min(100,wp)+'%';$('wmid').textContent=Math.round(W/2).toLocaleString();$('wend').textContent=W.toLocaleString()+' mL';$('cal').textContent=cal.toLocaleString();$('ctar').textContent=C.toLocaleString();$('cremain').textContent=`剩餘 ${Math.max(0,C-cal).toLocaleString()} kcal`;$('cpct').textContent=cp+'%';$('cmini').style.width=Math.min(100,cp)+'%';$('cfill').style.width=Math.min(100,cp)+'%';$('cmid').textContent=Math.round(C/2).toLocaleString();$('cend').textContent=C.toLocaleString()+' kcal';$('fcal').textContent=t.fc.toLocaleString()+' kcal';$('dcal').textContent=t.dc.toLocaleString()+' kcal';$('tcal').textContent=cal.toLocaleString()+' kcal';$('cref').textContent=C.toLocaleString()+' kcal / 日';let b=arr('bowel').sort((a,b)=>a.time.localeCompare(b.time));$('bcount').textContent=b.length+' 次';if(b.length){$('btime').textContent=b[b.length-1].time;$('btype').textContent=`型態 ${b[b.length-1].type}｜${bn[b[b.length-1].type]}`}else{$('btime').textContent='--:--';$('btype').textContent='尚無紀錄'}renderRecent();renderCharts();renderFull();renderInsight();profilePreview()}
-function renderRecent(){let d=arr('drinks').sort((a,b)=>b.time.localeCompare(a.time)).slice(0,4),f=arr('foods').sort((a,b)=>b.time.localeCompare(a.time)).slice(0,4),b=s.bowel.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time)).slice(0,4);$('recentD').innerHTML=thead('時間|飲品|容量|熱量')+(d.length?d.map(x=>`<div class="row"><div>${x.time}</div><div>🥤 ${drinkNames[x.type]}</div><div>${x.amount} mL</div><div class="right">${x.cal} kcal</div></div>`).join(''):empty('今天尚無飲品紀錄'));$('recentF').innerHTML=thead('時間|食品|份量|熱量')+(f.length?f.map(x=>`<div class="row"><div>${x.time}</div><div>🍚 ${esc(x.name)}</div><div>${esc(x.portion)}</div><div class="right">${x.cal} kcal</div></div>`).join(''):empty('今天尚無食品紀錄'));$('recentB').innerHTML=thead('時間|型態|分類|')+(b.length?b.map(x=>`<div class="row"><div>${x.date===today()?x.time:x.date.slice(5)+' '+x.time}</div><div>${stoolIcon(+x.type)}</div><div>${x.type} ${bn[x.type]}</div><div></div></div>`).join(''):empty('尚無排便紀錄'));$('bhistory').innerHTML=b.filter(x=>x.date===today()).map(x=>`<div style="padding:9px;border-bottom:1px solid #e8f0ea;font-size:13px">${x.time}　${stoolIcon(+x.type)}　型態 ${x.type}｜${bn[x.type]}</div>`).join('')||'<div style="padding:10px;color:#7b8a84">今日尚無紀錄</div>')}function thead(x){return'<div class="row thead">'+x.split('|').map((a,i)=>`<div class="${i===3?'right':''}">${a}</div>`).join('')+'</div>'}function empty(x){return`<div style="padding:18px;text-align:center;color:#8995a5">${x}</div>`}
+function renderRecent(){
+ let d=arr('drinks').slice().sort((a,b)=>b.time.localeCompare(a.time)).slice(0,4);
+ let f=arr('foods').slice().sort((a,b)=>b.time.localeCompare(a.time)).slice(0,4);
+ let b=s.bowel.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time)).slice(0,4);
+ $('recentD').innerHTML=thead('時間|飲品|容量|熱量')+(d.length?d.map(x=>`<div class="row"><div>${x.time}</div><div>🥤 ${drinkNames[x.type]}</div><div>${x.amount} mL</div><div class="right">${x.cal} kcal</div></div>`).join(''):empty('今天尚無飲品紀錄'));
+ $('recentF').innerHTML=thead('時間|食品|份量|熱量')+(f.length?f.map(x=>`<div class="row"><div>${x.time}</div><div>🍚 ${esc(x.name)}</div><div>${esc(x.portion)}</div><div class="right">${x.cal} kcal</div></div>`).join(''):empty('今天尚無食品紀錄'));
+ $('recentB').innerHTML=thead('時間|型態|分類|操作')+(b.length?b.map(x=>`<div class="row"><div>${x.date===today()?x.time:x.date.slice(5)+' '+x.time}</div><div>${stoolIcon(+x.type)}</div><div>${x.type} ${bn[x.type]}</div><div></div></div>`).join(''):empty('尚無排便紀錄'));
+ const todayB=b.filter(x=>x.date===today()).sort((a,z)=>String(z.time).localeCompare(String(a.time)));
+$('bhistory').innerHTML=todayB.map(x=>`<div class="v128-bowel-record"><small>${x.time}</small><div>${stoolIcon(+x.type)} 型態 ${x.type}｜${bn[x.type]}</div><span class="v128-bowel-qty">${x.qty||'未填寫'}</span></div>`).join('')||'<div style="padding:12px;color:#7b8a84">今日尚無紀錄</div>';
+const v128Meta=$('v128BowelMeta'); if(v128Meta) v128Meta.textContent=`今日 ${todayB.length} 次`;
+}function thead(x){return'<div class="row thead">'+x.split('|').map((a,i)=>`<div class="${i===3?'right':''}">${a}</div>`).join('')+'</div>'}function empty(x){return`<div style="padding:18px;text-align:center;color:#8995a5">${x}</div>`}
 function last7(){let a=[];for(let i=6;i>=0;i--){let d=new Date();d.setDate(d.getDate()-i);let date=d.toISOString().slice(0,10);a.push({date,v:s.drinks.filter(x=>x.date===date).reduce((q,x)=>q+ +x.amount,0)})}return a}function bars(){return last7().map((x,i)=>{let h=x.v?Math.max(2,Math.min(100,x.v/wt()*100)):2;return`<div class="barcol"><div class="barv">${x.v?x.v.toLocaleString():'—'}</div><div class="bar ${i===6?'today':''}" style="height:${h}%"></div><div class="bard">${x.date.slice(5).replace('-','/')}</div></div>`}).join('')}function renderCharts(){$('bars').innerHTML=bars();$('barsFull').innerHTML=bars();let t=totals(),sum=t.fc+t.dc,deg=sum?t.fc/sum*360:0;$('donut').style.background=`conic-gradient(#f39a2e 0 ${deg}deg,#58aaf0 ${deg}deg 360deg)`;$('dtot').textContent=sum.toLocaleString();$('lf').textContent=t.fc.toLocaleString();$('ld').textContent=t.dc.toLocaleString()}
 function renderFull(){let d=s.drinks.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));$('drinkTable').innerHTML='<div class="table">'+thead('日期|飲品|容量／熱量|操作')+d.map(x=>`<div class="row"><div>${x.date.slice(5)}<br>${x.time}</div><div>${drinkNames[x.type]}<br><small>${esc(x.note)}</small></div><div>${x.amount} mL<br>${x.cal} kcal</div><div class="right"><button onclick="editDrink('${x.id}')" style="border:0;background:none;color:#278ceb">編輯</button><button onclick="del('drinks','${x.id}')" style="border:0;background:none;color:#d65b5b">刪除</button></div></div>`).join('')+'</div>';let f=s.foods.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));$('foodTable').innerHTML='<div class="table">'+thead('日期|食品|份量／熱量|操作')+f.map(x=>`<div class="row"><div>${x.date.slice(5)}<br>${x.time}</div><div>${esc(x.name)}<br><small>${esc(x.note)}</small></div><div>${esc(x.portion)}<br>${x.cal} kcal</div><div class="right"><button onclick="editFood('${x.id}')" style="border:0;background:none;color:#278ceb">編輯</button><button onclick="del('foods','${x.id}')" style="border:0;background:none;color:#d65b5b">刪除</button></div></div>`).join('')+'</div>';let b=s.bowel.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));$('bowelTable').innerHTML='<div class="table">'+thead('日期|時間／型態|分類|操作')+b.map(x=>`<div class="row"><div>${x.date}</div><div>${x.time} ${stoolIcon(+x.type)}</div><div>${x.type} ${bn[x.type]}</div><div class="right"><button onclick="del('bowel','${x.id}')" style="border:0;background:none;color:#d65b5b">刪除</button></div></div>`).join('')+'</div>'}
 function renderInsight(){let t=totals(),W=wt(),wp=Math.round(t.water/W*100),b=arr('bowel');let msg=!p?'請先完成基本資料，以取得個人化的補水與熱量參考值。':wp<50&&b.some(x=>+x.type<=2)?`今日補水進度約 ${wp}%，且有較硬的排便型態紀錄。兩者可能相關，建議持續觀察。`:wp<50?`今日補水進度約 ${wp}%，仍有補水空間，可依自身情況分次補充液體。`:b.some(x=>+x.type>=6)?'今日有偏稀的排便型態紀錄，建議同時觀察飲食、飲品與排便頻率。':'目前沒有明顯需要特別提醒的紀錄。持續記錄有助於建立個人趨勢。';$('insight').innerHTML=`<strong>今日觀察</strong><br><br>${msg}<br><br>補水：${t.water.toLocaleString()} / ${W.toLocaleString()} mL　｜　熱量：${(t.fc+t.dc).toLocaleString()} / ${ct().toLocaleString()} kcal　｜　排便：${b.length} 次`}
