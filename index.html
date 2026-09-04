@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v3.0</title>
+<title>健康管家 v3.2</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -1252,13 +1252,13 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
   <div class="profile-user-controls">
     <label class="profile-user-select">
       <span>目前使用者</span>
-      <select id="userSelect"></select>
+      <select id="userSelect" onchange="switchUser(this.value)"></select>
     </label>
     <div class="user-control-note" style="width:100%;font-size:13px;color:#718096;margin-top:-2px">選擇上方使用者後，修改名稱、清除資料、刪除使用者都會套用到「目前使用者」。</div>
-    <button class="btn secondary" type="button" data-user-action="rename">✎ 修改名稱</button>
-    <button class="btn secondary" type="button" data-user-action="add">＋新增使用者</button>
-    <button class="btn danger-outline profile-clear-btn" type="button" data-user-action="clear">🗑 清除目前使用者資料</button>
-<button class="danger-btn" type="button" data-user-action="delete">❌ 刪除目前使用者</button>
+    <button class="btn secondary" type="button" onclick="renameCurrentUser()">✎ 修改名稱</button>
+    <button class="btn secondary" type="button" onclick="openNewUserDialog()">＋新增使用者</button>
+    <button class="btn danger-outline profile-clear-btn" type="button" onclick="clearCurrentUser()">🗑 清除目前使用者資料</button>
+<button class="danger-btn" type="button" onclick="deleteCurrentUser()">❌ 刪除目前使用者</button>
   </div><div class="muted" style="margin-top:8px;font-size:13px">⭐ 預設使用者只決定下次開啟網站時先進入哪個帳戶；目前使用者仍可自由切換。</div>
 </div>
 
@@ -1289,9 +1289,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
   </div>
 </div>
 </section>
-<section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" type="button" data-salary-action="save">儲存設定</button></div></div></section>
+<section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" type="button" onclick="saveSalary()">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v3.0</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v3.2</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
 
@@ -1310,459 +1310,23 @@ const stool={1:'小石頭型',2:'結塊型',3:'裂紋型',4:'黃金型 ⭐',5:'�
 const drinkNames={water:'白開水',unsweetTea:'無糖茶',sweetTea:'含糖茶',coffee:'咖啡',milk:'奶類飲品',other:'其他'};
 const incomeCats=['薪資','獎金','其他收入'],expenseCats=['飲食','刷卡','交通','家庭生活費','娛樂','投資','醫療','生活日用品','其他'];
 let editState={type:null,id:null};
-const $=id=>document.getElementById(id),uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8),today=()=>new Date().toISOString().slice(0,10);
-function nowTime(){const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
-function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function save(){
-  normalize();
-  if(typeof getCurrentUserId==='function' && typeof userKey==='function'){
-    localStorage.setItem(userKey(getCurrentUserId()),JSON.stringify(db));
+const USER_INDEX_KEY='health_manager_users_v1';
+const DEFAULT_USER_ID='user_1';
+const DEFAULT_DB={
+  profile:{height:0,weight:0,age:0,sex:'',activity:'normal'},
+  water:[],drinks:[],foods:[],bowel:[],weights:[],
+  finance:[],income:[],expense:[],salaryDay:5
+};
+
+function getUserIndex(){
+  try{
+    const raw=localStorage.getItem(USER_INDEX_KEY);
+    const list=raw?JSON.parse(raw):[];
+    return Array.isArray(list)?list.filter(u=>u&&u.id):[];
+  }catch(e){
+    console.error('getUserIndex error:',e);
+    return [];
   }
-  localStorage.setItem(KEY,JSON.stringify(db));
-}
-function toast(s){$('toast').textContent=s;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),1600)}
-function showPage(id){
-  const target=document.getElementById(id);
-  if(!target)return;
-  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p===target));
-  document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===id));
-  renderUserSwitcher();
-  if(id==='salary')loadSalary();
-  try{ render(); }catch(err){ console.error('render error:',err); }
-  window.scrollTo(0,0);
-}
-
-
-document.addEventListener('toggle',e=>{if(e.target.matches('.finance-details')&&e.target.open)requestAnimationFrame(drawFinanceCharts)},true);
-window.addEventListener('resize',()=>{const d=document.querySelector('.finance-details');if(d&&d.open)drawFinanceCharts()});
-function normalize(){
-  if(!db || typeof db!=='object') db={};
-  db.profile=db.profile||{height:0,weight:0,age:0,sex:'',activity:'normal'};
-  db.water=Array.isArray(db.water)?db.water:[];
-  db.drinks=Array.isArray(db.drinks)?db.drinks:[];
-  db.foods=Array.isArray(db.foods)?db.foods:[];
-  db.bowel=Array.isArray(db.bowel)?db.bowel:[];
-  db.weights=Array.isArray(db.weights)?db.weights:[];
-  db.finance=Array.isArray(db.finance)?db.finance:[];
-  db.income=Array.isArray(db.income)?db.income:[];
-  db.expense=Array.isArray(db.expense)?db.expense:[];
-  db.salaryDay=Number(db.salaryDay||5);
-}
-
-function day(type,d=today()){return db[type].filter(x=>x.date===d)}
-function waterGoal(){return db.profile?.weight?Math.max(1500,Math.round(db.profile.weight*32/50)*50):2000}
-function calorieGoal(){const p=db.profile;if(!p?.height||!p?.weight||!p?.age)return 2000;const b=10*p.weight+6.25*p.height-5*p.age+(p.sex==='male'?5:p.sex==='female'?-161:-78);return Math.round(b*({sedentary:1.2,normal:1.375,active:1.55}[p.activity||'normal'])/50)*50}
-function period(){const d=Math.min(28,Math.max(1,Number(db.salaryDay||5))),n=new Date();let s=new Date(n.getFullYear(),n.getMonth(),d);if(n<s)s=new Date(n.getFullYear(),n.getMonth()-1,d);return{s,e:new Date(s.getFullYear(),s.getMonth()+1,d-1)}}
-function fd(d){return d.toISOString().slice(0,10)}function inPeriod(x){const r=period();return x.date>=fd(r.s)&&x.date<=fd(r.e)}
-function money(){const a=db.finance.filter(inPeriod);return{in:a.filter(x=>x.kind==='income').reduce((s,x)=>s+Number(x.amount),0),out:a.filter(x=>x.kind==='expense').reduce((s,x)=>s+Number(x.amount),0)}}
-function openModal(c){$('modalBox').innerHTML=c;$('modal').classList.add('show')}function closeModal(){$('modal').classList.remove('show');editState={type:null,id:null}}$('modal').onclick=e=>{if(e.target===$('modal'))closeModal()}
-function waterModal(id=null){editState={type:'water',id};const x=id?db.water.find(v=>v.id===id):null;openModal(`<h2>${id?'編輯':'新增'}補水紀錄</h2><div class="form-grid"><label>日期<input id="mdate" type="date" value="${x?.date||today()}"></label><label>時間<input id="mtime" type="time" value="${x?.time||nowTime()}"></label><label class="full">液體攝取量（mL）<input id="mamount" type="number" min="1" value="${x?.amount??''}" placeholder="例如 280、375、620"></label></div><div class="modal-actions"><button class="secondary" onclick="closeModal()">取消</button><button class="primary" onclick="saveWater()">儲存</button></div>`)}
-function saveWater(){const x={id:editState.id||uid(),date:$('mdate').value,time:$('mtime').value,amount:Number($('mamount').value)};if(!x.date||!x.time||x.amount<=0)return toast('請完整填寫補水紀錄');const i=db.water.findIndex(v=>v.id===x.id);i>=0?db.water[i]=x:db.water.push(x);save();closeModal();render();toast('補水紀錄已更新')}
-function drinkModal(id=null){editState={type:'drink',id};const x=id?db.drinks.find(v=>v.id===id):null;openModal(`<h2>${id?'編輯':'新增'}飲品紀錄</h2><div class="form-grid"><label>日期<input id="mdate" type="date" value="${x?.date||today()}"></label><label>時間<input id="mtime" type="time" value="${x?.time||nowTime()}"></label><label>飲品<select id="mtype">${Object.entries(drinkNames).map(([k,v])=>`<option value="${k}" ${x?.type===k?'selected':''}>${v}</option>`).join('')}</select></label><label>容量（mL）<input id="mamount" type="number" min="1" value="${x?.amount??''}"></label><label>熱量（kcal）<input id="mcal" type="number" min="0" value="${x?.cal??''}"></label><label>消費金額（元）<input id="mprice" type="number" min="0" placeholder="留白＝未知" value="${x?.price??''}"></label><label class="full">備註<textarea id="mnote">${esc(x?.note||'')}</textarea></label></div><div class="modal-actions"><button class="secondary" onclick="closeModal()">取消</button><button class="primary" onclick="saveDrink()">儲存</button></div>`)}
-function saveDrink(){const x={id:editState.id||uid(),date:$('mdate').value,time:$('mtime').value,type:$('mtype').value,amount:Number($('mamount').value),cal:Number($('mcal').value||0),price:$('mprice').value===''?null:Number($('mprice').value),note:$('mnote').value.trim()};if(!x.date||!x.time||x.amount<=0)return toast('請完整填寫飲品紀錄');const i=db.drinks.findIndex(v=>v.id===x.id);i>=0?db.drinks[i]=x:db.drinks.push(x);syncExpense('drink',x);save();closeModal();render();toast('飲品紀錄已更新')}
-function foodModal(id=null){editState={type:'food',id};const x=id?db.foods.find(v=>v.id===id):null;openModal(`<h2>${id?'編輯':'新增'}食物紀錄</h2><div class="form-grid"><label>日期<input id="mdate" type="date" value="${x?.date||today()}"></label><label>時間<input id="mtime" type="time" value="${x?.time||nowTime()}"></label><label class="full">食物名稱<input id="mname" value="${esc(x?.name||'')}"></label><label>份量<input id="mportion" value="${esc(x?.portion||'')}"></label><label>熱量（kcal）<input id="mcal" type="number" min="0" value="${x?.cal??''}"></label><label>消費金額（元）<input id="mprice" type="number" min="0" placeholder="留白＝未知" value="${x?.price??''}"></label><label class="full">備註<textarea id="mnote">${esc(x?.note||'')}</textarea></label></div><div class="modal-actions"><button class="secondary" onclick="closeModal()">取消</button><button class="primary" onclick="saveFood()">儲存</button></div>`)}
-function saveFood(){const x={id:editState.id||uid(),date:$('mdate').value,time:$('mtime').value,name:$('mname').value.trim(),portion:$('mportion').value.trim(),cal:Number($('mcal').value||0),price:$('mprice').value===''?null:Number($('mprice').value),note:$('mnote').value.trim()};if(!x.date||!x.time||!x.name)return toast('請完整填寫食物紀錄');const i=db.foods.findIndex(v=>v.id===x.id);i>=0?db.foods[i]=x:db.foods.push(x);syncExpense('food',x);save();closeModal();render();toast('食物紀錄已更新')}
-function bowelModal(id=null){editState={type:'bowel',id};const x=id?db.bowel.find(v=>v.id===id):null;openModal(`<h2>${id?'編輯':'新增'}排便紀錄</h2><div class="form-grid"><label>日期<input id="mdate" type="date" value="${x?.date||today()}"></label><label>時間<input id="mtime" type="time" value="${x?.time||nowTime()}"></label><label class="full">排便型態<select id="mtype">${Object.entries(stool).map(([k,v])=>`<option value="${k}" ${Number(x?.type||4)===Number(k)?'selected':''}>第 ${k} 型｜${v}</option>`).join('')}</select></label><label class="full">排便量<select id="mqty"><option ${x?.qty==='少量'?'selected':''}>少量</option><option ${!x?.qty||x.qty==='中等量'?'selected':''}>中等量</option><option ${x?.qty==='大量'?'selected':''}>大量</option></select></label></div><div class="modal-actions"><button class="secondary" onclick="closeModal()">取消</button><button class="primary" onclick="saveBowel()">儲存</button></div>`)}
-function saveBowel(){const x={id:editState.id||uid(),date:$('mdate').value,time:$('mtime').value,type:Number($('mtype').value),qty:$('mqty').value};if(!x.date||!x.time)return toast('請完整填寫排便紀錄');const i=db.bowel.findIndex(v=>v.id===x.id);i>=0?db.bowel[i]=x:db.bowel.push(x);save();closeModal();render();toast('排便紀錄已更新')}
-function weightModal(id=null){editState={type:'weight',id};const x=id?db.weights.find(v=>v.id===id):null;openModal(`<h2>${id?'編輯':'新增'}體重紀錄</h2><div class="form-grid"><label>日期<input id="mdate" type="date" value="${x?.date||today()}"></label><label>時間<input id="mtime" type="time" value="${x?.time||nowTime()}"></label><label>體重（kg）<input id="mweight" type="number" min="1" step=".1" value="${x?.weight??''}"></label><label>體脂（%）<input id="mbodyfat" type="number" min="0" step=".1" value="${x?.bodyfat??''}"></label><label class="full">備註<textarea id="mnote">${esc(x?.note||'')}</textarea></label></div><div class="modal-actions"><button class="secondary" onclick="closeModal()">取消</button><button class="primary" onclick="saveWeight()">儲存</button></div>`)}
-function saveWeight(){const x={id:editState.id||uid(),date:$('mdate').value,time:$('mtime').value,weight:Number($('mweight').value),bodyfat:$('mbodyfat').value===''?null:Number($('mbodyfat').value),note:$('mnote').value.trim()};if(!x.date||!x.time||x.weight<=0)return toast('請完整填寫體重紀錄');const i=db.weights.findIndex(v=>v.id===x.id);i>=0?db.weights[i]=x:db.weights.push(x);save();closeModal();render();toast('體重紀錄已更新')}
-function financeModal(kind,id=null){editState={type:'finance',id};const x=id?db.finance.find(v=>v.id===id):null;const cats=kind==='income'?incomeCats:expenseCats;openModal(`<h2>${id?'編輯':'新增'}${kind==='income'?'收入':'支出'}紀錄</h2><div class="form-grid"><label>日期<input id="mdate" type="date" value="${x?.date||today()}"></label><label>時間<input id="mtime" type="time" value="${x?.time||nowTime()}"></label><label class="full">項目<input id="mname" value="${esc(x?.name||'')}"></label><label>分類<select id="mcat">${cats.map(c=>`<option ${x?.category===c?'selected':''}>${c}</option>`).join('')}</select></label><label>金額（元）<input id="mamount" type="number" min="1" value="${x?.amount??''}"></label><label class="full">備註<textarea id="mnote">${esc(x?.note||'')}</textarea></label></div><div class="modal-actions"><button class="secondary" onclick="closeModal()">取消</button><button class="primary" onclick="saveFinance('${kind}')">儲存</button></div>`)}
-function saveFinance(kind){const old=editState.id?db.finance.find(v=>v.id===editState.id):null;const x={id:editState.id||uid(),kind,date:$('mdate').value,time:$('mtime').value,name:$('mname').value.trim(),category:$('mcat').value,amount:Number($('mamount').value),note:$('mnote').value.trim(),sourceType:old?.sourceType||null,sourceId:old?.sourceId||null};if(!x.date||!x.time||!x.name||x.amount<=0)return toast('請完整填寫收支紀錄');const i=db.finance.findIndex(v=>v.id===x.id);i>=0?db.finance[i]=x:db.finance.push(x);save();closeModal();render();toast(editState.id?'收支紀錄已更新':'收支紀錄已新增')}
-function syncExpense(sourceType,r){const old=db.finance.find(x=>x.sourceType===sourceType&&x.sourceId===r.id);if(r.price==null){if(old)db.finance=db.finance.filter(x=>x.id!==old.id);return}const x={id:old?.id||uid(),kind:'expense',category:'飲食',name:sourceType==='drink'?drinkNames[r.type]:r.name,amount:Number(r.price),date:r.date,time:r.time,note:'由健康紀錄同步',sourceType,sourceId:r.id};if(old)Object.assign(old,x);else db.finance.push(x)}
-function del(type,id){if(!confirm('確定要刪除這筆紀錄嗎？'))return;if(type==='finance')db.finance=db.finance.filter(x=>x.id!==id);else{db[type]=db[type].filter(x=>x.id!==id);if(type==='drinks'||type==='foods'){const s=type==='drinks'?'drink':'food';db.finance=db.finance.filter(x=>!(x.sourceType===s&&x.sourceId===id))}}save();render();toast('紀錄已刪除')}
-function acts(type,id){return `<span class="row-actions"><button class="mini-edit" onclick="editRecord('${type}','${id}')">編輯</button><button class="mini-del" onclick="del('${type}','${id}')">刪除</button></span>`}
-function editRecord(type,id){if(type==='water')return waterModal(id);if(type==='drinks')return drinkModal(id);if(type==='foods')return foodModal(id);if(type==='bowel')return bowelModal(id);if(type==='weights')return weightModal(id);const x=db.finance.find(v=>v.id===id);if(x)financeModal(x.kind,id)}
-function toggleBowel(){const p=$('bowelPanel');if(p)p.classList.toggle('open')}
-
-function financePeriodRange(){
-  const now=new Date(), day=Number(db.salaryDay||5);
-  let y=now.getFullYear(),m=now.getMonth(),start,end;
-  if(now.getDate()>=day){start=new Date(y,m,day);end=new Date(y,m+1,day-1,23,59,59)}
-  else{start=new Date(y,m-1,day);end=new Date(y,m,day-1,23,59,59)}
-  return {start,end};
-}
-function drawFinanceCharts(){
-  const trend=document.getElementById('financeTrendChart'), cat=document.getElementById('financeCategoryChart'), stats=document.getElementById('financeStats');
-  if(!trend||!cat||!stats)return;
-  const range=financePeriodRange(), start=range.start, end=range.end;
-  const days=[]; let d=new Date(start);
-  while(d<=end){days.push(new Date(d));d.setDate(d.getDate()+1)}
-  // Keep charts readable for very long salary cycles while retaining every available day.
-  const maxDays=31;
-  const labels=days.length>maxDays?days.slice(-maxDays):days;
-  const fmt=d=>String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
-  const inc=labels.map(x=>db.finance.filter(r=>r.kind==='income'&&new Date(r.date+'T'+(r.time||'00:00'))>=x&&new Date(r.date+'T'+(r.time||'00:00'))<new Date(x.getTime()+86400000)).reduce((s,r)=>s+Number(r.amount||0),0));
-  const exp=labels.map(x=>db.finance.filter(r=>r.kind==='expense'&&new Date(r.date+'T'+(r.time||'00:00'))>=x&&new Date(r.date+'T'+(r.time||'00:00'))<new Date(x.getTime()+86400000)).reduce((s,r)=>s+Number(r.amount||0),0));
-  function setup(c){const ctx=c.getContext('2d'),w=c.clientWidth*devicePixelRatio,h=c.clientHeight*devicePixelRatio;c.width=w;c.height=h;ctx.scale(devicePixelRatio,devicePixelRatio);return [ctx,c.clientWidth,c.clientHeight]}
-  function lineChart(c){
-    const [ctx,w,h]=setup(c), pad={l:34,r:10,t:16,b:24}, max=Math.max(1,...inc,...exp), xstep=(w-pad.l-pad.r)/Math.max(1,labels.length-1);
-    ctx.clearRect(0,0,w,h);ctx.strokeStyle='#e7edf3';ctx.lineWidth=1;
-    for(let i=0;i<4;i++){const y=pad.t+(h-pad.t-pad.b)*i/3;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
-    function path(vals){ctx.beginPath();vals.forEach((v,i)=>{const x=pad.l+i*xstep,y=h-pad.b-(v/max)*(h-pad.t-pad.b);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()}
-    ctx.lineWidth=2;ctx.strokeStyle='#168a56';path(inc);ctx.strokeStyle='#df4d48';path(exp);
-    ctx.fillStyle='#6d7b8a';ctx.font='9px sans-serif';labels.forEach((x,i)=>{if(labels.length<=10||i%Math.ceil(labels.length/7)===0){ctx.fillText(fmt(x),pad.l+i*xstep-10,h-7)}})
-    ctx.fillText('收入',w-62,11);ctx.fillText('支出',w-28,11)
-  }
-  function barChart(c){
-    const [ctx,w,h]=setup(c), pad={l:32,r:8,t:14,b:28};
-    const cats={};db.finance.filter(r=>r.kind==='expense').forEach(r=>{const dt=new Date(r.date+'T'+(r.time||'00:00'));if(dt>=start&&dt<=end)cats[r.category||'其他']=(cats[r.category||'其他']||0)+Number(r.amount||0)});
-    const arr=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,7), max=Math.max(1,...arr.map(x=>x[1])), bw=(w-pad.l-pad.r)/Math.max(1,arr.length)*.6;
-    ctx.clearRect(0,0,w,h);ctx.font='9px sans-serif';ctx.fillStyle='#6d7b8a';
-    arr.forEach((x,i)=>{const cx=pad.l+(i+.5)*(w-pad.l-pad.r)/arr.length,bh=(x[1]/max)*(h-pad.t-pad.b);ctx.fillRect(cx-bw/2,h-pad.b-bh,bw,bh);ctx.fillText(x[0].slice(0,5),cx-13,h-9);ctx.fillText('$'+Math.round(x[1]),cx-14,h-pad.b-bh-3)});
-    if(!arr.length)ctx.fillText('目前沒有支出資料',pad.l,h/2);
-  }
-  lineChart(trend);barChart(cat);
-  const income=inc.reduce((a,b)=>a+b,0), expense=exp.reduce((a,b)=>a+b,0);
-  stats.innerHTML='<div class="finance-stats-row"><span>收入筆數</span><b>'+db.finance.filter(r=>r.kind==='income').length+'</b></div><div class="finance-stats-row"><span>支出筆數</span><b>'+db.finance.filter(r=>r.kind==='expense').length+'</b></div><div class="finance-stats-row"><span>平均每日支出</span><b>$'+Math.round(expense/Math.max(1,labels.length))+'</b></div><div class="finance-stats-row"><span>儲蓄率</span><b>'+ (income?Math.round((income-expense)/income*100):0) +'%</b></div>';
-}
-
-
-function drawSimpleLine(canvas, labels, series){
-  if(!canvas)return;
-  const dpr=window.devicePixelRatio||1,w=canvas.clientWidth,h=canvas.clientHeight;
-  canvas.width=w*dpr;canvas.height=h*dpr;const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
-  const pad={l:38,r:12,t:18,b:28}, iw=w-pad.l-pad.r, ih=h-pad.t-pad.b;
-  ctx.clearRect(0,0,w,h);
-  const all=series.flatMap(s=>s.values), max=Math.max(1,...all), min=Math.min(0,...all);
-  ctx.strokeStyle='#e7edf3';ctx.lineWidth=1;
-  for(let i=0;i<4;i++){const y=pad.t+ih*i/3;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
-  series.forEach(s=>{ctx.beginPath();s.values.forEach((v,i)=>{const x=pad.l+(labels.length===1?iw/2:iw*i/(labels.length-1)),y=pad.t+ih-(v-min)/(max-min||1)*ih;i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.strokeStyle=s.stroke;ctx.lineWidth=2;ctx.stroke()});
-  ctx.fillStyle='#738092';ctx.font='9px sans-serif';
-  labels.forEach((l,i)=>{if(labels.length<=10||i%Math.ceil(labels.length/7)===0){const x=pad.l+(labels.length===1?iw/2:iw*i/(labels.length-1));ctx.fillText(l,x-12,h-8)}});
-}
-
-function buildHealthAnalysis(water, calories, weights, bowel){
-  const avgW=Math.round(water.reduce((a,b)=>a+b,0)/water.length);
-  const avgC=Math.round(calories.reduce((a,b)=>a+b,0)/calories.length);
-  const recentW=weights.filter(v=>v!=null);
-  const weightChange=recentW.length>1?recentW.at(-1)-recentW[0]:null;
-  const recentBowel=bowel.slice(-3).reduce((a,b)=>a+b,0);
-  const waterGoal=waterGoalValue();
-  const parts=[];
-  if(waterGoal&&avgW<waterGoal*.7) parts.push('最近 7 日平均補水量偏低，建議留意液體攝取。');
-  else if(waterGoal&&avgW>=waterGoal*.9) parts.push('最近 7 日補水表現穩定，整體接近每日參考值。');
-  else parts.push('最近 7 日補水量有紀錄，建議持續觀察每日變化。');
-  if(weightChange!==null) parts.push('7 日體重變化約 '+(weightChange>0?'+':'')+weightChange.toFixed(1)+' kg，'+(Math.abs(weightChange)<0.5?'整體波動不大。':'可持續觀察後續趨勢。'));
-  if(recentBowel===0) parts.push('近 3 日沒有排便紀錄，建議持續記錄以利觀察。');
-  else parts.push('近 3 日共記錄 '+recentBowel+' 次排便，可搭配補水與排便型態一起觀察。');
-  return '最近 7 日平均補水約 '+avgW+' mL、平均熱量約 '+avgC+' kcal。'+parts.join('');
-}
-function buildCalorieAnalysis(today, goal, foods, drinks, calories){
-  if(!goal) return '目前尚未設定每日參考熱量，完成基本資料後可進行更完整的熱量分析。';
-  const rate=Math.round(today/goal*100);
-  let status=rate<80?'目前攝取量低於每日參考值。':rate<=100?'目前攝取量接近每日參考值。':'目前攝取量高於每日參考值。';
-  const drinkShare=today?Math.round(drinks/today*100):0;
-  return '今日攝取 '+today+' kcal，約達每日參考值的 '+rate+'%。'+status+' 今日食物約 '+foods+' kcal、飲品約 '+drinks+' kcal，飲品熱量占約 '+drinkShare+'%。建議搭配活動量與實際飲食情況持續觀察。';
-}
-function waterGoalValue(){
-  const p=db.profile||{}, w=Number(p.weight||0);
-  if(!w)return 0;
-  return Math.max(1500,Math.round((w*32)/50)*50);
-}
-
-function renderAnalysisPages(){
-  const days=[...Array(7)].map((_,i)=>{
-    const d=new Date();
-    d.setHours(0,0,0,0);
-    d.setDate(d.getDate()-6+i);
-    return d;
-  });
-  const keys=days.map(d=>dateKey(d));
-  const labels=days.map(d=>(d.getMonth()+1)+'/'+d.getDate());
-
-  const water=keys.map(k=>
-    day('water',k).reduce((s,x)=>s+Number(x.amount||0),0)+
-    day('drinks',k).reduce((s,x)=>s+Number(x.amount||0),0)
-  );
-
-  const calories=keys.map(k=>
-    day('foods',k).reduce((s,x)=>s+Number(x.cal||x.kcal||0),0)+
-    day('drinks',k).reduce((s,x)=>s+Number(x.cal||x.calories||0),0)
-  );
-
-  const weights=keys.map(k=>{
-    const a=day('weights',k);
-    return a.length?Number(a[a.length-1].weight):null;
-  }).map((v,i,a)=>v??(i?a[i-1]:null));
-
-  const bowel=keys.map(k=>day('bowel',k).length);
-
-  drawSimpleLine(document.getElementById('healthTrendChart'),labels,[
-    {values:water,stroke:'#2688d9'},
-    {values:calories,stroke:'#e28a3b'}
-  ]);
-
-  const wa=Math.round(water.reduce((a,b)=>a+b,0)/7);
-  const ca=Math.round(calories.reduce((a,b)=>a+b,0)/7);
-  const validW=weights.filter(v=>v!=null);
-  const wc=validW.length>1?(validW.at(-1)-validW[0]).toFixed(1)+' kg':'—';
-  const bc=bowel.reduce((a,b)=>a+b,0);
-
-  const set=(id,v)=>{
-    const e=document.getElementById(id);
-    if(e)e.textContent=v;
-  };
-
-  set('trendWaterAvg',wa.toLocaleString());
-  set('trendCalAvg',ca.toLocaleString());
-  set('trendWeightChange',wc);
-  set('trendBowelCount',bc);
-
-  const ha=document.getElementById('healthAnalysisText');
-  if(ha)ha.innerHTML=buildHealthAnalysis(water,calories,weights,bowel);
-
-  const goal=Number(calorieGoal()||0);
-  const today=calories[6];
-
-  const foods=day('foods',keys[6]).reduce((s,x)=>s+Number(x.cal||x.kcal||0),0);
-  const drinks=day('drinks',keys[6]).reduce((s,x)=>s+Number(x.cal||x.calories||0),0);
-
-  set('calToday',today+' kcal');
-  set('calGoal',goal?goal+' kcal':'—');
-  set('calRemain',goal?Math.max(0,goal-today)+' kcal':'—');
-  set('calRate',goal?Math.min(999,Math.round(today/goal*100))+'%':'0%');
-  set('calFood',foods+' kcal');
-  set('calDrink',drinks+' kcal');
-
-  const cpf=document.getElementById('calProgressFill');
-  if(cpf)cpf.style.width=(goal?Math.min(100,Math.round(today/goal*100)):0)+'%';
-
-  const caText=document.getElementById('calorieAnalysisText');
-  if(caText)caText.textContent=buildCalorieAnalysis(today,goal,foods,drinks,calories);
-
-  const pie=document.getElementById('caloriePieChart');
-  if(pie){
-    const dpr=window.devicePixelRatio||1;
-    const w=pie.clientWidth,h=pie.clientHeight;
-    pie.width=w*dpr;pie.height=h*dpr;
-    const c=pie.getContext('2d');
-    c.setTransform(dpr,0,0,dpr,0,0);
-    c.clearRect(0,0,w,h);
-    const total=foods+drinks||1;
-    const vals=[foods,drinks];
-    const cx=w/2,cy=h/2,r=Math.min(w,h)*.32;
-    let a=-Math.PI/2;
-    vals.forEach((v,i)=>{
-      const na=a+v/total*Math.PI*2;
-      c.beginPath();c.moveTo(cx,cy);c.arc(cx,cy,r,a,na);c.closePath();
-      c.fillStyle=i?'#e28a3b':'#4f91d5';c.fill();a=na;
-    });
-    c.fillStyle='#566476';c.font='10px sans-serif';
-    c.fillText('食物 '+foods+' kcal',10,18);
-    c.fillText('飲品 '+drinks+' kcal',10,34);
-  }
-
-  drawSimpleLine(
-    document.getElementById('calorieTrendChart'),
-    labels,
-    [{values:calories,stroke:'#e28a3b'}]
-  );
-
-  const list=document.getElementById('calorieRecordList');
-  if(list){
-    const rows=[
-      ...day('foods',keys[6]).map(x=>({name:x.name||'食物',k:Number(x.cal||x.kcal||0)})),
-      ...day('drinks',keys[6]).map(x=>({name:x.type||'飲品',k:Number(x.cal||x.calories||0)}))
-    ];
-    list.innerHTML=rows.length
-      ? rows.map(x=>'<div class="finance-stats-row"><span>'+x.name+'</span><b>'+x.k+' kcal</b></div>').join('')
-      : '<div class="muted">今日尚無熱量紀錄</div>';
-  }
-}
-function render(){
-  const n=new Date();
-  const set=(id,v)=>{
-    const e=$(id);
-    if(e)e.textContent=v;
-  };
-  const setStyle=(id,prop,v)=>{
-    const e=$(id);
-    if(e)e.style[prop]=v;
-  };
-
-  set('todayText',`${n.getFullYear()}/${String(n.getMonth()+1).padStart(2,'0')}/${String(n.getDate()).padStart(2,'0')}（${'日一二三四五六'[n.getDay()]}）`);
-
-  const wg=waterGoal(), cg=calorieGoal();
-  const dr=day('drinks'), fo=day('foods'), bo=day('bowel'), we=day('weights');
-  const water=day('water').reduce((s,x)=>s+Number(x.amount||0),0)+
-    dr.reduce((s,x)=>s+Number(x.amount||0),0);
-  const cal=dr.reduce((s,x)=>s+Number(x.cal||0),0)+
-    fo.reduce((s,x)=>s+Number(x.cal||0),0);
-
-  // 首頁目前只保留主要的補水／熱量進度區；
-  // 舊版 mini 卡片若不存在則直接略過，避免 render 中斷。
-  set('waterTotal',water.toLocaleString());
-  set('waterGoal',wg.toLocaleString());
-  setStyle('waterMini','width',Math.min(100,water/wg*100)+'%');
-  set('waterPct',Math.round(water/wg*100)+'%');
-
-  set('calTotal',cal.toLocaleString());
-  set('calGoal',cg.toLocaleString());
-  setStyle('calMini','width',Math.min(100,cal/cg*100)+'%');
-  set('calPct',Math.round(cal/cg*100)+'%');
-
-  set('waterHero',water.toLocaleString());
-  set('waterHeroGoal',wg.toLocaleString());
-  setStyle('waterHeroBar','width',Math.min(100,water/wg*100)+'%');
-  set('waterRemain',`剩餘 ${Math.max(0,wg-water).toLocaleString()} mL`);
-
-  set('calHero',cal.toLocaleString());
-  set('calHeroGoal',cg.toLocaleString());
-  setStyle('calHeroBar','width',Math.min(100,cal/cg*100)+'%');
-  set('calRemain',Math.max(0,cg-cal).toLocaleString());
-
-  set('bowelCount',bo.length);
-  set('bsummaryCount',bo.length);
-  const lb=bo.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time))[0];
-  const latestBowel=lb;
-  const latestWeight=we.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time))[0];
-  set('bowelTime',latestBowel?.time||'--:--');
-  set('bowelTypeMini',latestBowel?`第 ${latestBowel.type} 型`:'--');
-  set('bowelQtyMini',latestBowel?.qty||'--');
-  set('bowelDate',latestBowel?.date||'--/--/--');
-  set('bowelStatus',latestBowel?'最近一次紀錄':'尚無紀錄');
-  set('bsummaryLatest',latestBowel?`最近一次：${latestBowel.time}（型態 ${latestBowel.type}，${latestBowel.qty||'未填寫'}）`:'尚無紀錄');
-
-  set('weightNow',latestWeight?.weight??'--');
-  set('weightDate',latestWeight?.date||'--/--/--');
-  set('weightTime',latestWeight?.time||'--:--');
-  const prevWeights=we.slice().sort((a,z)=>(a.date+a.time).localeCompare(z.date+z.time));
-  const weightChange=prevWeights.length>1
-    ? (Number(prevWeights.at(-1).weight)-Number(prevWeights.at(-2).weight)).toFixed(1)+' kg'
-    : '-- kg';
-  set('weightChangeToday',weightChange);
-  const weightStatus=document.querySelector('.weight-status');
-  if(weightStatus)weightStatus.textContent=latestWeight?'最後一次紀錄':'尚無紀錄';
-
-  renderLists();
-  renderCharts();
-  renderFinance();
-  loadProfile();
-
-  const r=period();
-  const range=`${String(r.s.getMonth()+1).padStart(2,'0')}/${String(r.s.getDate()).padStart(2,'0')} ～ ${String(r.e.getMonth()+1).padStart(2,'0')}/${String(r.e.getDate()).padStart(2,'0')}`;
-  set('financePeriod',range);
-  set('financePeriod2',range);
-  set('sidePeriod',range);
-  set('salaryDayLabel',db.salaryDay||5);
-  set('sideRemain','尚餘 '+Math.max(0,Math.ceil((r.e-new Date())/86400000))+' 天');
-  if($('salaryInput'))$('salaryInput').value=db.salaryDay||5;
-}
-function renderLists(){
-  const d=day('drinks').slice().sort((a,z)=>z.time.localeCompare(a.time));
-  const f=day('foods').slice().sort((a,z)=>z.time.localeCompare(a.time));
-
-  const setHTML=(id,value)=>{
-    const el=$(id);
-    if(el)el.innerHTML=value;
-  };
-
-  setHTML('todayDrinkList',
-    d.length
-      ? d.slice(0,5).map(x=>`<div class="row"><span>🥤</span><span class="grow">${esc(drinkNames[x.type])}<small class="muted"> ${x.amount} mL · ${x.cal||0} kcal · ${x.time}</small></span><b class="price">${x.price==null?'':'$'+Number(x.price).toLocaleString()}</b>${acts('drinks',x.id)}</div>`).join('')
-      : '<div class="muted">今天尚無飲品紀錄</div>'
-  );
-
-  setHTML('todayFoodList',
-    f.length
-      ? f.slice(0,5).map(x=>`<div class="row"><span>🍴</span><span class="grow">${esc(x.name)}<small class="muted"> ${esc(x.portion)} · ${x.cal||0} kcal · ${x.time}</small></span><b class="price">${x.price==null?'':'$'+Number(x.price).toLocaleString()}</b>${acts('foods',x.id)}</div>`).join('')
-      : '<div class="muted">今天尚無食物紀錄</div>'
-  );
-
-  const bowelLast=lastB();
-  const bowelLastObj=day('bowel').slice().sort((a,z)=>z.time.localeCompare(a.time))[0];
-  setHTML('bowelDetail',
-    bowelLastObj
-      ? `<div class="row"><span>最近型態</span><b>${bowelLast}</b></div><div class="row"><span>排便量</span><b>${bowelLastObj.qty||'未填寫'}</b></div>`
-      : '<div class="muted">尚無排便紀錄</div>'
-  );
-
-  // 首頁已移除「今日歷史紀錄」，因此這個舊 DOM 不存在時直接略過。
-  setHTML('bowelTodayList',
-    day('bowel').slice().sort((a,z)=>z.time.localeCompare(a.time))
-      .map(x=>`<div class="row"><span>${x.time}</span><span class="grow">第 ${x.type} 型｜${stool[x.type]} · ${x.qty||'未填寫'}</span>${acts('bowel',x.id)}</div>`).join('')
-      || '<div class="muted">今天尚無紀錄</div>'
-  );
-
-  setHTML('waterTable',table(
-    db.water.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),
-    x=>[x.date+' '+x.time,'補水',x.amount+' mL',acts('water',x.id)]
-  ));
-  setHTML('drinkTable',table(
-    db.drinks.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),
-    x=>[x.date+' '+x.time,drinkNames[x.type],`${x.amount} mL / ${x.cal||0} kcal`,acts('drinks',x.id)]
-  ));
-  setHTML('foodTable',table(
-    db.foods.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),
-    x=>[x.date+' '+x.time,x.name,`${x.portion||'—'} / ${x.cal||0} kcal`,acts('foods',x.id)]
-  ));
-  setHTML('bowelTable',table(
-    db.bowel.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),
-    x=>[x.date,x.time+`｜第 ${x.type} 型`,`${stool[x.type]} / ${x.qty||'未填寫'}`,acts('bowel',x.id)]
-  ));
-  setHTML('weightTable',table(
-    db.weights.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),
-    x=>[x.date,x.time,`${x.weight} kg${x.bodyfat!=null?' / 體脂 '+x.bodyfat+'%':''}`,acts('weights',x.id)]
-  ));
-  setHTML('incomeTable',financeTable('income'));
-  setHTML('expenseTable',financeTable('expense'));
-}
-function saveUserIndex(list){
-  localStorage.setItem(USER_INDEX_KEY,JSON.stringify(list));
-}
-function userKey(id){
-  return 'health_manager_profile_'+id;
-}
-function getDefaultUserId(){
-  return localStorage.getItem('health_manager_default_user')||'';
-}
-function setDefaultUserId(id){
-  if(id) localStorage.setItem('health_manager_default_user',id);
-  else localStorage.removeItem('health_manager_default_user');
-}
-function getCurrentUserId(){
-  const list=getUserIndex();
-  if(!list.length)return '';
-  const current=localStorage.getItem('health_manager_current_user');
-  if(current && list.some(u=>u.id===current))return current;
-  const def=getDefaultUserId();
-  if(def && list.some(u=>u.id===def))return def;
-  return list[0].id;
-}
-function setCurrentUserId(id){
-  if(id)localStorage.setItem('health_manager_current_user',id);
-}
-function saveCurrentDb(){
-  normalize();
-  const id=getCurrentUserId();
-  if(id)localStorage.setItem(userKey(id),JSON.stringify(db));
-  localStorage.setItem(KEY,JSON.stringify(db));
-}
-function loadUserData(id){
-  const list=getUserIndex();
-  if(!id || !list.some(u=>u.id===id))id=list[0]?.id||'';
-  if(!id){
-    db={}; normalize(); return;
-  }
-  setCurrentUserId(id);
-  let raw=localStorage.getItem(userKey(id));
-
-  // 僅對第一個舊帳戶執行一次舊版資料遷移。
-  if(!raw && id===DEFAULT_USER_ID){
-    raw=localStorage.getItem(KEY) ||
-        localStorage.getItem(OLD_KEY) ||
-        localStorage.getItem('health_manager_v125_final') ||
-        localStorage.getItem('health_manager_v124_final') ||
-        localStorage.getItem('health_manager_v123_final');
-  }
-
-  if(raw){
-    try{db=JSON.parse(raw);}catch(e){db={};}
-  }else{
-    db={};
-  }
-  normalize();
-  localStorage.setItem(userKey(id),JSON.stringify(db));
 }
 function renderUserSwitcher(){
   const list=getUserIndex();
@@ -1859,33 +1423,44 @@ function escapeHtml(value){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#039;');
 }
-function createUser(){
-    const input=document.getElementById('newUserName');
-    const name=(input?.value||'').trim();
-    if(!name){ toast('請輸入使用者名稱'); input?.focus(); return false; }
-    const users=getUserIndex();
-    const id='user_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
-    const fresh=JSON.parse(JSON.stringify(DEFAULT_DB));
-    fresh.profile={height:0,weight:0,age:0,sex:'',activity:'normal'};
-    fresh.salaryDay=5;
-    users.push({id,name});
-    saveUserIndex(users);
-    localStorage.setItem(userKey(id),JSON.stringify(fresh));
-    setCurrentUserId(id);
-    db=fresh;
-    if(input) input.value='';
-    refreshUserUI();
-    try{ render(); }catch(err){ console.error('render after create user:',err); }
-    toast('已新增使用者：'+name);
-    return true;
+function createUser(nameArg=''){
+  const input=document.getElementById('newUserName');
+  const name=String(nameArg||input?.value||'').trim();
+  if(!name){toast('請輸入使用者名稱');input?.focus();return false;}
+  const users=getUserIndex();
+  if(users.some(u=>String(u.name||'').trim()===name)){
+    toast('已有相同名稱的使用者');return false;
   }
-function addUser(){ return createUser(); }
+  const id='user_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+  const fresh=JSON.parse(JSON.stringify(DEFAULT_DB));
+  users.push({id,name});
+  saveUserIndex(users);
+  localStorage.setItem(userKey(id),JSON.stringify(fresh));
+  setCurrentUserId(id);
+  db=fresh;
+  if(input)input.value='';
+  renderUserSwitcher();
+  loadProfile();
+  try{render();}catch(err){console.error('render after create user:',err);}
+  closeNewUserDialog();
+  toast('已新增使用者：'+name);
+  return true;
+}
+function addUser(){
+  return createUser(document.getElementById('newUserName')?.value||'');
+}
+function openNewUserDialog(){
+  const dialog=document.getElementById('newUserDialog');
+  const input=document.getElementById('newUserName');
+  if(dialog)dialog.classList.add('show');
+  if(input){input.value='';setTimeout(()=>input.focus(),0);}
+}
 function closeNewUserDialog(){
   document.getElementById('newUserDialog')?.classList.remove('show');
 }
 function confirmAddUser(){
   const input=document.getElementById('newUserName');
-  if(createUser(input?.value||''))closeNewUserDialog();
+  createUser(input?.value||'');
 }
 function setDefaultCurrentUser(){
   const id=getCurrentUserId();
@@ -2083,13 +1658,6 @@ document.addEventListener('change',function(e){
   });
 })();
 
-// SALARY_ACTION_HANDLER_V29
-document.addEventListener('click',function(e){
-  const btn=e.target.closest?.('[data-salary-action]');
-  if(!btn)return;
-  e.preventDefault();
-  if(btn.getAttribute('data-salary-action')==='save')saveSalary();
-});
 </script>
 
 <div id="newUserDialog" class="user-dialog" role="dialog" aria-modal="true" aria-labelledby="newUserTitle">
@@ -2115,16 +1683,3 @@ document.addEventListener('click',function(e){
   </div>
 </div>
 </body></html>
-
-document.addEventListener('click',function(e){
-    const btn=e.target.closest?.('[data-user-action]');
-    if(!btn)return;
-    e.preventDefault();
-    e.stopPropagation();
-    const action=btn.getAttribute('data-user-action');
-    if(action==='add') addUser();
-    else if(action==='rename') renameCurrentUser();
-    else if(action==='clear') clearCurrentUser();
-    else if(action==='delete') deleteCurrentUser();
-  });
-  
