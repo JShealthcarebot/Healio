@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v2.6</title>
+<title>健康管家 v2.7</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -1255,9 +1255,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
       <select id="userSelect"></select>
     </label>
     <div class="user-control-note" style="width:100%;font-size:13px;color:#718096;margin-top:-2px">選擇上方使用者後，修改名稱、清除資料、刪除使用者都會套用到「目前使用者」。</div>
-    <button class="btn secondary" type="button" type="button" data-user-action="rename">✎ 修改名稱</button>
-    <button class="btn secondary" type="button" type="button" data-user-action="add">＋新增使用者</button>
-    <button class="btn danger-outline profile-clear-btn" type="button" type="button" data-user-action="clear">🗑 清除目前使用者資料</button>
+    <button class="btn secondary" type="button" data-user-action="rename">✎ 修改名稱</button>
+    <button class="btn secondary" type="button" data-user-action="add">＋新增使用者</button>
+    <button class="btn danger-outline profile-clear-btn" type="button" data-user-action="clear">🗑 清除目前使用者資料</button>
 <button class="danger-btn" type="button" data-user-action="delete">❌ 刪除目前使用者</button>
   </div><div class="muted" style="margin-top:8px;font-size:13px">⭐ 預設使用者只決定下次開啟網站時先進入哪個帳戶；目前使用者仍可自由切換。</div>
 </div>
@@ -1291,7 +1291,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 </section>
 <section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" onclick="saveSalary()">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v2.2</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v2.7</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
 
@@ -1647,26 +1647,64 @@ function render(){
   set('sideRemain','尚餘 '+Math.max(0,Math.ceil((r.e-new Date())/86400000))+' 天');
   if($('salaryInput'))$('salaryInput').value=db.salaryDay||5;
 }
-function renderLists(){const d=day('drinks').slice().sort((a,z)=>z.time.localeCompare(a.time)),f=day('foods').slice().sort((a,z)=>z.time.localeCompare(a.time));$('todayDrinkList').innerHTML=d.length?d.slice(0,5).map(x=>`<div class="row"><span>🥤</span><span class="grow">${esc(drinkNames[x.type])}<small class="muted"> ${x.amount} mL · ${x.cal||0} kcal · ${x.time}</small></span><b class="price">${x.price==null?'':'$'+Number(x.price).toLocaleString()}</b>${acts('drinks',x.id)}</div>`).join(''):'<div class="muted">今天尚無飲品紀錄</div>';$('todayFoodList').innerHTML=f.length?f.slice(0,5).map(x=>`<div class="row"><span>🍴</span><span class="grow">${esc(x.name)}<small class="muted"> ${esc(x.portion)} · ${x.cal||0} kcal · ${x.time}</small></span><b class="price">${x.price==null?'':'$'+Number(x.price).toLocaleString()}</b>${acts('foods',x.id)}</div>`).join(''):'<div class="muted">今天尚無食物紀錄</div>';$('bowelDetail').innerHTML=lastB()?`<div class="row"><span>最近型態</span><b>${lastB()}</b></div><div class="row"><span>排便量</span><b>${day('bowel').slice().sort((a,z)=>z.time.localeCompare(a.time))[0].qty}</b></div>`:'<div class="muted">尚無排便紀錄</div>';$('bowelTodayList').innerHTML=day('bowel').slice().sort((a,z)=>z.time.localeCompare(a.time)).map(x=>`<div class="row"><span>${x.time}</span><span class="grow">第 ${x.type} 型｜${stool[x.type]} · ${x.qty}</span>${acts('bowel',x.id)}</div>`).join('')||'<div class="muted">今天尚無紀錄</div>';$('waterTable').innerHTML=table(db.water.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),x=>[x.date+' '+x.time,'補水',x.amount+' mL',acts('water',x.id)]);$('drinkTable').innerHTML=table(db.drinks.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),x=>[x.date+' '+x.time,drinkNames[x.type],`${x.amount} mL / ${x.cal||0} kcal`,acts('drinks',x.id)]);$('foodTable').innerHTML=table(db.foods.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),x=>[x.date+' '+x.time,x.name,`${x.portion||'—'} / ${x.cal||0} kcal`,acts('foods',x.id)]);$('bowelTable').innerHTML=table(db.bowel.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),x=>[x.date,x.time+`｜第 ${x.type} 型`,`${stool[x.type]} / ${x.qty}`,acts('bowel',x.id)]);$('weightTable').innerHTML=table(db.weights.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),x=>[x.date,x.time,`${x.weight} kg${x.bodyfat!=null?' / 體脂 '+x.bodyfat+'%':''}`,acts('weights',x.id)]);$('incomeTable').innerHTML=financeTable('income');$('expenseTable').innerHTML=financeTable('expense')}
-function lastB(){const b=day('bowel').slice().sort((a,z)=>z.time.localeCompare(a.time))[0];return b?`第 ${b.type} 型｜${stool[b.type]}`:''}
-function table(a,row){return '<div class="table"><div class="thead"><div>日期／時間</div><div>項目</div><div>內容</div><div>操作</div></div>'+(a.length?a.map(x=>{const r=row(x);return `<div class="row"><div>${r[0]}</div><div>${esc(r[1])}</div><div>${esc(r[2])}</div><div class="right">${r[3]}</div></div>`}).join(''):'<div class="row"><div>尚無紀錄</div></div>')+'</div>'}
-function financeTable(kind){const a=db.finance.filter(x=>x.kind===kind).sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time));return '<div class="table"><div class="thead"><div>日期／時間</div><div>項目</div><div>分類／金額</div><div>操作</div></div>'+(a.length?a.map(x=>`<div class="row"><div>${x.date}<br>${x.time}</div><div>${esc(x.name)}</div><div>${esc(x.category)}<br>$${Number(x.amount).toLocaleString()}</div><div class="right">${acts('finance',x.id)}</div></div>`).join(''):'<div class="row"><div>尚無紀錄</div></div>')+'</div>'}
-function renderCharts(){const a=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const k=fd(d);a.push({w:day('water',k).reduce((s,x)=>s+Number(x.amount||0),0)+day('drinks',k).reduce((s,x)=>s+Number(x.amount||0),0),c:day('drinks',k).reduce((s,x)=>s+Number(x.cal||0),0)+day('foods',k).reduce((s,x)=>s+Number(x.cal||0),0),wt:day('weights',k).slice(-1)[0]?.weight||0,b:day('bowel',k).length})}for(const [id,key] of [['waterChart','w'],['calChart','c'],['weightChart','wt'],['bowelChart','b']]){const max=Math.max(1,...a.map(x=>x[key]));$(id).innerHTML=a.map(x=>`<i style="height:${Math.max(3,x[key]/max*92)}%"></i>`).join('')}}
-function renderFinance(){const t=money();$('finIncome').textContent='+ $'+t.in.toLocaleString();$('finExpense').textContent='- $'+t.out.toLocaleString();$('finBalance').textContent='$'+(t.in-t.out).toLocaleString();const a=db.finance.filter(inPeriod).sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time));$('finIncomeList').innerHTML=a.filter(x=>x.kind==='income').slice(0,4).map(x=>`<div class="row"><span class="grow">${esc(x.name)}<small class="muted"> ${x.date.slice(5)} ${x.time}</small></span><b class="income">+$${Number(x.amount).toLocaleString()}</b>${acts('finance',x.id)}</div>`).join('')||'<div class="muted">尚無收入</div>';$('finExpenseList').innerHTML=a.filter(x=>x.kind==='expense').slice(0,4).map(x=>`<div class="row"><span class="grow">${esc(x.name)}<small class="muted"> ${x.date.slice(5)} ${x.time}</small></span><b class="expense">-$${Number(x.amount).toLocaleString()}</b>${acts('finance',x.id)}</div>`).join('')||'<div class="muted">尚無支出</div>';const m={};a.filter(x=>x.kind==='expense').forEach(x=>m[x.category]=(m[x.category]||0)+Number(x.amount));$('finCats').innerHTML=Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="row"><span>${esc(k)}</span><b>$${v.toLocaleString()}</b></div>`).join('')||'<div class="muted">尚無支出</div>'}
-function loadProfile(){if($('ph')){$('ph').value=db.profile?.height||'';$('pw').value=db.profile?.weight||'';$('pa').value=db.profile?.age||'';$('ps').value=db.profile?.sex||'';$('pac').value=db.profile?.activity||'normal';$('profilePreview').textContent=db.profile?`BMI ${(db.profile.weight/(db.profile.height/100)**2).toFixed(1)}　｜　補水參考 ${waterGoal().toLocaleString()} mL／日　｜　熱量參考 ${calorieGoal().toLocaleString()} kcal／日`:'填寫基本資料後會計算參考值。'}}
+function renderLists(){
+  const d=day('drinks').slice().sort((a,z)=>z.time.localeCompare(a.time));
+  const f=day('foods').slice().sort((a,z)=>z.time.localeCompare(a.time));
 
-/* ===== 多使用者資料 ===== */
-const USER_INDEX_KEY='health_manager_users_v1';
-const DEFAULT_USER_ID='user_1';
+  const setHTML=(id,value)=>{
+    const el=$(id);
+    if(el)el.innerHTML=value;
+  };
 
+  setHTML('todayDrinkList',
+    d.length
+      ? d.slice(0,5).map(x=>`<div class="row"><span>🥤</span><span class="grow">${esc(drinkNames[x.type])}<small class="muted"> ${x.amount} mL · ${x.cal||0} kcal · ${x.time}</small></span><b class="price">${x.price==null?'':'$'+Number(x.price).toLocaleString()}</b>${acts('drinks',x.id)}</div>`).join('')
+      : '<div class="muted">今天尚無飲品紀錄</div>'
+  );
 
+  setHTML('todayFoodList',
+    f.length
+      ? f.slice(0,5).map(x=>`<div class="row"><span>🍴</span><span class="grow">${esc(x.name)}<small class="muted"> ${esc(x.portion)} · ${x.cal||0} kcal · ${x.time}</small></span><b class="price">${x.price==null?'':'$'+Number(x.price).toLocaleString()}</b>${acts('foods',x.id)}</div>`).join('')
+      : '<div class="muted">今天尚無食物紀錄</div>'
+  );
 
-function getUserIndex(){
-  try{
-    const raw=localStorage.getItem(USER_INDEX_KEY);
-    const list=raw?JSON.parse(raw):[];
-    return Array.isArray(list)?list.filter(u=>u&&u.id):[];
-  }catch(e){return [];}
+  const bowelLast=lastB();
+  const bowelLastObj=day('bowel').slice().sort((a,z)=>z.time.localeCompare(a.time))[0];
+  setHTML('bowelDetail',
+    bowelLastObj
+      ? `<div class="row"><span>最近型態</span><b>${bowelLast}</b></div><div class="row"><span>排便量</span><b>${bowelLastObj.qty||'未填寫'}</b></div>`
+      : '<div class="muted">尚無排便紀錄</div>'
+  );
+
+  // 首頁已移除「今日歷史紀錄」，因此這個舊 DOM 不存在時直接略過。
+  setHTML('bowelTodayList',
+    day('bowel').slice().sort((a,z)=>z.time.localeCompare(a.time))
+      .map(x=>`<div class="row"><span>${x.time}</span><span class="grow">第 ${x.type} 型｜${stool[x.type]} · ${x.qty||'未填寫'}</span>${acts('bowel',x.id)}</div>`).join('')
+      || '<div class="muted">今天尚無紀錄</div>'
+  );
+
+  setHTML('waterTable',table(
+    db.water.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),
+    x=>[x.date+' '+x.time,'補水',x.amount+' mL',acts('water',x.id)]
+  ));
+  setHTML('drinkTable',table(
+    db.drinks.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),
+    x=>[x.date+' '+x.time,drinkNames[x.type],`${x.amount} mL / ${x.cal||0} kcal`,acts('drinks',x.id)]
+  ));
+  setHTML('foodTable',table(
+    db.foods.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),
+    x=>[x.date+' '+x.time,x.name,`${x.portion||'—'} / ${x.cal||0} kcal`,acts('foods',x.id)]
+  ));
+  setHTML('bowelTable',table(
+    db.bowel.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),
+    x=>[x.date,x.time+`｜第 ${x.type} 型`,`${stool[x.type]} / ${x.qty||'未填寫'}`,acts('bowel',x.id)]
+  ));
+  setHTML('weightTable',table(
+    db.weights.slice().sort((a,z)=>(z.date+z.time).localeCompare(a.date+a.time)),
+    x=>[x.date,x.time,`${x.weight} kg${x.bodyfat!=null?' / 體脂 '+x.bodyfat+'%':''}`,acts('weights',x.id)]
+  ));
+  setHTML('incomeTable',financeTable('income'));
+  setHTML('expenseTable',financeTable('expense'));
 }
 function saveUserIndex(list){
   localStorage.setItem(USER_INDEX_KEY,JSON.stringify(list));
@@ -2009,17 +2047,7 @@ document.addEventListener('change',function(e){
   }
 });
 
-// USER_ACTION_HANDLER_V22_FINAL
-document.addEventListener('click',function(e){
-  const btn=e.target.closest?.('[data-user-action]');
-  if(!btn)return;
 
-  const action=btn.getAttribute('data-user-action');
-  if(action==='add') addUser();
-  else if(action==='rename') renameCurrentUser();
-  else if(action==='clear') clearCurrentUser();
-  else if(action==='delete') deleteCurrentUser();
-});
 
 
 // V26_BOOT_FINAL
@@ -2029,6 +2057,25 @@ document.addEventListener('click',function(e){
   renderUserSwitcher();
   try{render();}catch(err){console.error('initial render error:',err);}
 })();
+
+// USER_ACTION_HANDLER_V27
+function bindUserActions(){
+  if(window.__userActionsBound)return;
+  window.__userActionsBound=true;
+  document.addEventListener('click',function(e){
+    const btn=e.target.closest?.('[data-user-action]');
+    if(!btn)return;
+    const action=btn.getAttribute('data-user-action');
+    if(action==='add')addUser();
+    else if(action==='rename')renameCurrentUser();
+    else if(action==='clear')clearCurrentUser();
+    else if(action==='delete')deleteCurrentUser();
+  });
+  document.addEventListener('change',function(e){
+    if(e.target && e.target.id==='userSelect')switchUser(e.target.value);
+  });
+}
+bindUserActions();
 </script>
 
 <div id="newUserDialog" class="user-dialog" role="dialog" aria-modal="true" aria-labelledby="newUserTitle">
