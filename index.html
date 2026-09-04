@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v3.3</title>
+<title>健康管家 v3.4</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -1291,7 +1291,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 </section>
 <section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" type="button" onclick="saveSalary()">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v3.3</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v3.4</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
 
@@ -1681,4 +1681,34 @@ document.addEventListener('change',function(e){
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  try{
+    ensureUserIndex();
+    const uid=getCurrentUserId();
+    if(uid){
+      loadUserData(uid);
+      setCurrentUserId(uid);
+    }
+    renderUserSwitcher();
+
+    const userSelect=document.getElementById('userSelect');
+    if(userSelect) userSelect.onchange=function(){ switchUser(this.value); };
+
+    const salaryBtn=document.querySelector('[onclick*="saveSalary"],#saveSalaryBtn');
+    if(salaryBtn) salaryBtn.onclick=function(e){e.preventDefault();saveSalary();};
+
+    const addBtn=document.getElementById('addUserBtn');
+    if(addBtn) addBtn.onclick=function(e){e.preventDefault();openNewUserDialog();};
+
+    const confirmUser=document.getElementById('confirmNewUser');
+    if(confirmUser) confirmUser.onclick=function(e){e.preventDefault();createUser();};
+
+    showPage('home');
+  }catch(err){
+    console.error('初始化失敗:',err);
+  }
+});
+</script>
 </body></html>
