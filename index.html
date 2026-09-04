@@ -391,6 +391,29 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
   background:#fff8e1;color:#8d6e00;border:1px solid #ffe082;
 }
 
+
+.user-dialog{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+  background:rgba(15,23,42,.42);z-index:9999;padding:20px}
+.user-dialog.show{display:flex}
+.user-dialog-card{width:min(420px,100%);background:#fff;border-radius:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.22);padding:24px}
+.user-dialog-card h3{margin:0 0 8px;font-size:21px}
+.user-dialog-card p{margin:0 0 16px;color:#718096;font-size:14px}
+.user-dialog-card input{width:100%;box-sizing:border-box;padding:12px 14px;
+  border:1px solid #d7e0ea;border-radius:10px;font-size:16px;outline:none}
+.user-dialog-card input:focus{border-color:#7da2c7;box-shadow:0 0 0 3px rgba(125,162,199,.15)}
+.user-dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.user-dialog-actions button{border:0;border-radius:10px;padding:10px 16px;cursor:pointer;font-weight:600}
+.user-dialog-cancel{background:#eef2f6;color:#445}
+.user-dialog-ok{background:#315f8f;color:#fff}
+.profile-user-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.profile-user-select{min-width:280px;flex:1}
+.profile-user-select select{width:100%;box-sizing:border-box}
+@media(max-width:720px){
+  .profile-user-controls{align-items:stretch}
+  .profile-user-select{min-width:100%;flex-basis:100%}
+  .profile-user-controls .btn,.profile-user-controls .danger-btn{flex:1;min-width:140px}
+}
 </style>
 
 <style>
@@ -1147,12 +1170,13 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
   <div class="profile-user-controls">
     <label class="profile-user-select">
       <span>目前使用者</span>
-      <select id="userSelect" onchange="switchUser(this.value)"></select>
+      <select id="userSelect"></select>
     </label>
-    <button class="btn secondary" type="button" onclick="renameCurrentUser()">✎ 修改名稱</button>
-    <button class="btn secondary" type="button" onclick="addUser()">＋新增使用者</button>
-    <button class="btn danger-outline profile-clear-btn" type="button" onclick="clearCurrentUser()">🗑 清除目前使用者資料</button>
-<button class="danger-btn" onclick="deleteCurrentUser()">❌ 刪除目前使用者</button>
+    <div class="user-control-note" style="width:100%;font-size:13px;color:#718096;margin-top:-2px">選擇上方使用者後，修改名稱、清除資料、刪除使用者都會套用到「目前使用者」。</div>
+    <button class="btn secondary" type="button" type="button" data-user-action="rename">✎ 修改名稱</button>
+    <button class="btn secondary" type="button" type="button" data-user-action="add">＋新增使用者</button>
+    <button class="btn danger-outline profile-clear-btn" type="button" type="button" data-user-action="clear">🗑 清除目前使用者資料</button>
+<button class="danger-btn" type="button" data-user-action="delete">❌ 刪除目前使用者</button>
   </div><div class="muted" style="margin-top:8px;font-size:13px">⭐ 預設使用者只決定下次開啟網站時先進入哪個帳戶；目前使用者仍可自由切換。</div>
 </div>
 
@@ -1245,7 +1269,7 @@ function normalize(){
   db.expense=Array.isArray(db.expense)?db.expense:[];
   db.salaryDay=Number(db.salaryDay||5);
 }
-clearDefaultUserIfMissing();
+
 function day(type,d=today()){return db[type].filter(x=>x.date===d)}
 function waterGoal(){return db.profile?.weight?Math.max(1500,Math.round(db.profile.weight*32/50)*50):2000}
 function calorieGoal(){const p=db.profile;if(!p?.height||!p?.weight||!p?.age)return 2000;const b=10*p.weight+6.25*p.height-5*p.age+(p.sex==='male'?5:p.sex==='female'?-161:-78);return Math.round(b*({sedentary:1.2,normal:1.375,active:1.55}[p.activity||'normal'])/50)*50}
@@ -1649,19 +1673,24 @@ function renderUserSwitcher(){
 }
 function refreshUserUI(){
   renderUserSwitcher();
+  loadProfile();
   render();
+  if(typeof renderAnalysisPages==='function'){
+    setTimeout(renderAnalysisPages,30);
+  }
 }
 function switchUser(id){
   const list=getUserIndex();
   if(!id || !list.some(u=>u.id===id))return;
+
   const oldId=getCurrentUserId();
   if(id===oldId){
-    renderUserSwitcher();
+    refreshUserUI();
     return;
   }
 
-  // 只儲存一次舊帳戶，不重新走 showPage。
-  saveCurrentDb();
+  // 先完整保存舊帳戶，再切換並載入新帳戶。
+  if(oldId) saveCurrentDb();
   setCurrentUserId(id);
   loadUserData(id);
   refreshUserUI();
@@ -1736,7 +1765,6 @@ function createUser(name){
   normalize();
   localStorage.setItem(userKey(id),JSON.stringify(db));
 
-  refreshUserUI();
   showPage('profile');
   toast('已新增「'+clean+'」');
   return true;
@@ -1769,18 +1797,18 @@ function setDefaultCurrentUser(){
 }
 function deleteCurrentUser(){
   const list=getUserIndex();
-  const id=getCurrentUserId();
+  const id=getSelectedUserId();
 
-  if(list.length<=1){
+  if(!id || list.length<=1){
     toast('目前只剩 1 位使用者，無法刪除');
-    return;
+    return false;
   }
 
   const user=list.find(u=>u.id===id);
-  const name=user?.name||'目前使用者';
+  const name=user?.name||'使用者';
 
-  if(!confirm('確定要刪除「'+name+'」嗎？\n\n健康與財務資料都會永久刪除，且無法復原。'))return;
-  if(!confirm('再次確認：刪除「'+name+'」及其全部資料？'))return;
+  if(!confirm('確定要刪除「'+name+'」嗎？\n\n健康與財務資料都會永久刪除，且無法復原。'))return false;
+  if(!confirm('再次確認：刪除「'+name+'」及其全部資料？'))return false;
 
   localStorage.removeItem(userKey(id));
 
@@ -1794,30 +1822,48 @@ function deleteCurrentUser(){
   loadUserData(nextId);
   refreshUserUI();
   showPage('profile');
-  toast('已刪除「'+name+'」');
+
+  toast('已刪除「'+name+'」，目前切換至「'+remaining[0].name+'」');
+  return true;
+}
+
+function getSelectedUserId(){
+  const select=document.getElementById('userSelect');
+  const selected=select?.value;
+  const list=getUserIndex();
+  if(selected && list.some(u=>u.id===selected)) return selected;
+  return getCurrentUserId();
+}
+
+function clearUserById(id){
+  const list=getUserIndex();
+  const user=list.find(u=>u.id===id);
+  if(!user)return false;
+
+  if(!confirm(`確定要清除「${user.name}」的全部健康與記帳資料嗎？\n\n包含：基本資料、補水、飲品、食物、排便、體重、收入與支出。\n\n帳戶本身不會刪除。`))return false;
+
+  const emptyDb={
+    profile:{height:0,weight:0,age:0,sex:'',activity:'normal'},
+    water:[],drinks:[],foods:[],bowel:[],weights:[],
+    finance:[],income:[],expense:[],salaryDay:5
+  };
+
+  localStorage.setItem(userKey(id),JSON.stringify(emptyDb));
+
+  if(id===getCurrentUserId()){
+    db=emptyDb;
+    normalize();
+    localStorage.setItem(KEY,JSON.stringify(db));
+    refreshUserUI();
+    loadProfile();
+  }
+
+  toast('「'+user.name+'」的資料已清除');
+  return true;
 }
 
 function clearCurrentUser(){
-  const current=getCurrentUserId();
-  const list=getUserIndex();
-  const u=list.find(x=>x.id===current)||list[0];
-
-  if(!confirm(`確定要清除「${u.name}」的全部健康與記帳資料嗎？\n\n包含：基本資料、補水、飲品、食物、排便、體重、收入與支出。\n\n此操作無法復原。`)) return;
-
-  db={
-    profile:{height:0,weight:0,age:0,sex:'',activity:'normal'},
-    water:[],drinks:[],foods:[],bowel:[],weights:[],
-    income:[],expense:[],salaryDay:5
-  };
-  normalize();
-  localStorage.removeItem(userKey(current));
-  saveCurrentDb();
-
-  loadProfile();
-  render();
-  renderUserSwitcher();
-  showPage('profile');
-  toast('「'+u.name+'」的資料已清除');
+  return clearUserById(getSelectedUserId());
 }
 
 function saveProfile(){
@@ -1844,6 +1890,32 @@ function saveProfile(){
   toast('基本資料已儲存');
 }
 function saveSalary(){db.salaryDay=Math.min(28,Math.max(1,Number($('salaryInput').value||5)));save();render();toast('發薪日已更新')}
+
+// USER_INIT_V22_2
+(function(){
+  let list=getUserIndex();
+
+  if(!list.length){
+    list=[{id:DEFAULT_USER_ID,name:'我的帳戶'}];
+    saveUserIndex(list);
+  }
+
+  const current=localStorage.getItem('health_manager_current_user');
+  const def=getDefaultUserId();
+
+  if(current && list.some(u=>u.id===current)){
+    setCurrentUserId(current);
+  }else if(def && list.some(u=>u.id===def)){
+    setCurrentUserId(def);
+  }else{
+    setCurrentUserId(list[0].id);
+  }
+
+  if(!getDefaultUserId() || !list.some(u=>u.id===getDefaultUserId())){
+    setDefaultUserId(getCurrentUserId());
+  }
+})();
+
 loadUserData(getCurrentUserId());
 renderUserSwitcher();
 render();
@@ -1852,26 +1924,46 @@ setTimeout(()=>{const d=document.querySelector('.finance-details');if(d&&d.open)
 
 window.addEventListener('resize',()=>setTimeout(renderAnalysisPages,50));
 
-// Robust user controls v2.1
-document.addEventListener('change',function(e){
-  if(e.target && e.target.id==='userSelect') switchUser(e.target.value);
-});
-document.addEventListener('keydown',function(e){
-  if(e.key==='Escape'){
-    if(e.target.closest?.('#newUserDialog')) closeNewUserDialog();
-    if(e.target.closest?.('#renameUserDialog')) closeRenameUserDialog();
-  }
-  if(e.key==='Enter'){
-    if(e.target.closest?.('#newUserDialog')) confirmAddUser();
-    if(e.target.closest?.('#renameUserDialog')) confirmRenameUser();
-  }
-});
-
-// USER_SWITCH_DELEGATION_V22
+// USER_SWITCH_HANDLER_V22_2_FINAL
 document.addEventListener('change',function(e){
   if(e.target && e.target.id==='userSelect'){
     switchUser(e.target.value);
   }
 });
+
+// USER_ACTION_HANDLER_V22_FINAL
+document.addEventListener('click',function(e){
+  const btn=e.target.closest?.('[data-user-action]');
+  if(!btn)return;
+
+  const action=btn.getAttribute('data-user-action');
+  if(action==='add') addUser();
+  else if(action==='rename') renameCurrentUser();
+  else if(action==='clear') clearCurrentUser();
+  else if(action==='delete') deleteCurrentUser();
+});
 </script>
+
+<div id="newUserDialog" class="user-dialog" role="dialog" aria-modal="true" aria-labelledby="newUserTitle">
+  <div class="user-dialog-card">
+    <h3 id="newUserTitle">新增使用者</h3>
+    <p>建立新的健康與財務資料帳戶。</p>
+    <input id="newUserName" type="text" maxlength="30" placeholder="請輸入使用者名稱">
+    <div class="user-dialog-actions">
+      <button type="button" class="user-dialog-cancel" onclick="closeNewUserDialog()">取消</button>
+      <button type="button" class="user-dialog-ok" onclick="confirmAddUser()">建立使用者</button>
+    </div>
+  </div>
+</div>
+<div id="renameUserDialog" class="user-dialog" role="dialog" aria-modal="true" aria-labelledby="renameUserTitle">
+  <div class="user-dialog-card">
+    <h3 id="renameUserTitle">修改使用者名稱</h3>
+    <p>只會修改名稱，不會影響健康或財務資料。</p>
+    <input id="renameUserName" type="text" maxlength="30" placeholder="請輸入使用者名稱">
+    <div class="user-dialog-actions">
+      <button type="button" class="user-dialog-cancel" onclick="closeRenameUserDialog()">取消</button>
+      <button type="button" class="user-dialog-ok" onclick="confirmRenameUser()">儲存名稱</button>
+    </div>
+  </div>
+</div>
 </body></html>
