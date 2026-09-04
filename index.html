@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v2.9</title>
+<title>健康管家 v3.0</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -1291,7 +1291,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 </section>
 <section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" type="button" data-salary-action="save">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v2.9</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v3.0</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
 
@@ -1859,51 +1859,27 @@ function escapeHtml(value){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#039;');
 }
-function createUser(name){
-  const clean=String(name||'').trim();
-  if(!clean){toast('請輸入使用者名稱');return false;}
-
-  const list=getUserIndex();
-  const id='user_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
-
-  list.push({id:id,name:clean});
-  saveUserIndex(list);
-
-  const emptyDb={
-    profile:{height:0,weight:0,age:0,sex:'',activity:'normal'},
-    water:[],drinks:[],foods:[],bowel:[],weights:[],
-    finance:[],income:[],expense:[],salaryDay:5
-  };
-
-  localStorage.setItem(userKey(id),JSON.stringify(emptyDb));
-  setCurrentUserId(id);
-  db=emptyDb;
-  normalize();
-  localStorage.setItem(userKey(id),JSON.stringify(db));
-
-  renderUserSwitcher();
-  loadProfile();
-  render();
-  showPage('profile');
-  renderUserSwitcher();
-  loadProfile();
-  toast('已新增「'+clean+'」');
-  return true;
-}
-function addUser(){
-  const dialog=document.getElementById('newUserDialog');
-  const input=document.getElementById('newUserName');
-
-  if(dialog && input){
-    input.value='';
-    dialog.classList.add('show');
-    setTimeout(()=>input.focus(),50);
-    return;
+function createUser(){
+    const input=document.getElementById('newUserName');
+    const name=(input?.value||'').trim();
+    if(!name){ toast('請輸入使用者名稱'); input?.focus(); return false; }
+    const users=getUserIndex();
+    const id='user_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+    const fresh=JSON.parse(JSON.stringify(DEFAULT_DB));
+    fresh.profile={height:0,weight:0,age:0,sex:'',activity:'normal'};
+    fresh.salaryDay=5;
+    users.push({id,name});
+    saveUserIndex(users);
+    localStorage.setItem(userKey(id),JSON.stringify(fresh));
+    setCurrentUserId(id);
+    db=fresh;
+    if(input) input.value='';
+    refreshUserUI();
+    try{ render(); }catch(err){ console.error('render after create user:',err); }
+    toast('已新增使用者：'+name);
+    return true;
   }
-
-  const name=window.prompt('請輸入新的使用者名稱','');
-  if(name!==null)createUser(name);
-}
+function addUser(){ return createUser(); }
 function closeNewUserDialog(){
   document.getElementById('newUserDialog')?.classList.remove('show');
 }
@@ -2020,23 +1996,28 @@ function loadSalary(){
   return value;
 }
 function saveSalary(){
-  const input=$('salaryInput');
-  const value=Math.min(28,Math.max(1,Number(input?.value||5)));
-
-  db.salaryDay=value;
-  normalize();
-
-  // 直接寫入目前使用者的獨立資料，確保設定不會只存在暫存 db。
-  const id=getCurrentUserId();
-  if(id)localStorage.setItem(userKey(id),JSON.stringify(db));
-  localStorage.setItem(KEY,JSON.stringify(db));
-
-  loadSalary();
-
-  // 即使其他儀表板元件 render 有問題，發薪日也已成功保存。
-  try{render();}catch(err){console.error('render after salary save:',err);}
-  toast('發薪日已更新為每月 '+value+' 日');
-}
+    try{
+      const input=document.getElementById('salaryInput');
+      if(!input){ toast('找不到發薪日設定欄位'); return false; }
+      const raw=parseInt(input.value,10);
+      const value=Math.min(28,Math.max(1,Number.isFinite(raw)?raw:5));
+      if(!db || typeof db!=='object') db={};
+      db.salaryDay=value;
+      normalize();
+      const id=getCurrentUserId();
+      if(id) localStorage.setItem(userKey(id),JSON.stringify(db));
+      localStorage.setItem(KEY,JSON.stringify(db));
+      const label=document.getElementById('salaryDayLabel');
+      if(label) label.textContent=String(value);
+      input.value=String(value);
+      toast('發薪日已更新為每月 '+value+' 日');
+      return true;
+    }catch(err){
+      console.error('saveSalary error:',err);
+      toast('發薪日儲存失敗，請再試一次');
+      return false;
+    }
+  }
 
 // USER_INIT_V22_2
 (function(){
@@ -2095,18 +2076,6 @@ document.addEventListener('change',function(e){
   if(window.__healthManagerUserActionBound)return;
   window.__healthManagerUserActionBound=true;
 
-  document.addEventListener('click',function(e){
-    const btn=e.target.closest?.('[data-user-action]');
-    if(!btn)return;
-    e.preventDefault();
-
-    const action=btn.getAttribute('data-user-action');
-    if(action==='add') addUser();
-    else if(action==='rename') renameCurrentUser();
-    else if(action==='clear') clearCurrentUser();
-    else if(action==='delete') deleteCurrentUser();
-  });
-
   document.addEventListener('change',function(e){
     if(e.target && e.target.id==='userSelect'){
       switchUser(e.target.value);
@@ -2146,3 +2115,16 @@ document.addEventListener('click',function(e){
   </div>
 </div>
 </body></html>
+
+document.addEventListener('click',function(e){
+    const btn=e.target.closest?.('[data-user-action]');
+    if(!btn)return;
+    e.preventDefault();
+    e.stopPropagation();
+    const action=btn.getAttribute('data-user-action');
+    if(action==='add') addUser();
+    else if(action==='rename') renameCurrentUser();
+    else if(action==='clear') clearCurrentUser();
+    else if(action==='delete') deleteCurrentUser();
+  });
+  
