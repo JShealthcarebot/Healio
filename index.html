@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v2.1</title>
+<title>健康管家 v2.2</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -1148,7 +1148,6 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
     <label class="profile-user-select">
       <span>目前使用者</span>
       <select id="userSelect" onchange="switchUser(this.value)"></select>
-<button type="button" onclick="setDefaultCurrentUser()">⭐ 設為預設</button>
     </label>
     <button class="btn secondary" type="button" onclick="renameCurrentUser()">✎ 修改名稱</button>
     <button class="btn secondary" type="button" onclick="addUser()">＋新增使用者</button>
@@ -1186,7 +1185,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 </section>
 <section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" onclick="saveSalary()">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v2</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v2.2</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
 
@@ -1219,7 +1218,6 @@ function toast(s){$('toast').textContent=s;$('toast').classList.add('show');setT
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===id));
   document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.dataset.page===id));
-  loadUserData(getCurrentUserId());
   renderUserSwitcher();
   render();
   scrollTo(0,0);
@@ -1559,257 +1557,154 @@ function loadProfile(){if($('ph')){$('ph').value=db.profile?.height||'';$('pw').
 const USER_INDEX_KEY='health_manager_users_v1';
 const DEFAULT_USER_ID='user_1';
 
+
+
 function getUserIndex(){
   try{
     const raw=localStorage.getItem(USER_INDEX_KEY);
-    if(raw){
-      const list=JSON.parse(raw);
-      if(Array.isArray(list)&&list.length)return list;
-    }
-
-    // 第一次啟用多使用者時，把舊版單一使用者資料保留為「使用者 1」。
-    const legacy=localStorage.getItem(KEY)||localStorage.getItem(OLD_KEY);
-    const list=[{id:DEFAULT_USER_ID,name:'我的帳戶'}];
-    localStorage.setItem(USER_INDEX_KEY,JSON.stringify(list));
-
-    if(legacy && !localStorage.getItem(userKey(DEFAULT_USER_ID))){
-      localStorage.setItem(userKey(DEFAULT_USER_ID),legacy);
-    }
-    return list;
-  }catch(e){
-    return [{id:DEFAULT_USER_ID,name:'我的帳戶'}];
-  }
+    const list=raw?JSON.parse(raw):[];
+    return Array.isArray(list)?list.filter(u=>u&&u.id):[];
+  }catch(e){return [];}
 }
 function saveUserIndex(list){
   localStorage.setItem(USER_INDEX_KEY,JSON.stringify(list));
 }
-
 function userKey(id){
   return 'health_manager_profile_'+id;
 }
-
+function getDefaultUserId(){
+  return localStorage.getItem('health_manager_default_user')||'';
+}
+function setDefaultUserId(id){
+  if(id) localStorage.setItem('health_manager_default_user',id);
+  else localStorage.removeItem('health_manager_default_user');
+}
 function getCurrentUserId(){
   const list=getUserIndex();
-  if(!list.length) return DEFAULT_USER_ID;
-  const saved=localStorage.getItem('health_manager_current_user');
-  if(saved && list.some(u=>u.id===saved)) return saved;
-  const defaultId=getDefaultUserId();
-  if(defaultId && list.some(u=>u.id===defaultId)) return defaultId;
+  if(!list.length)return '';
+  const current=localStorage.getItem('health_manager_current_user');
+  if(current && list.some(u=>u.id===current))return current;
+  const def=getDefaultUserId();
+  if(def && list.some(u=>u.id===def))return def;
   return list[0].id;
 }
-
 function setCurrentUserId(id){
-  localStorage.setItem('health_manager_current_user',id);
+  if(id)localStorage.setItem('health_manager_current_user',id);
 }
-
 function saveCurrentDb(){
-  localStorage.setItem(userKey(getCurrentUserId()),JSON.stringify(db));
+  normalize();
+  const id=getCurrentUserId();
+  if(id)localStorage.setItem(userKey(id),JSON.stringify(db));
   localStorage.setItem(KEY,JSON.stringify(db));
 }
-
 function loadUserData(id){
-  const raw=localStorage.getItem(userKey(id));
+  const list=getUserIndex();
+  if(!id || !list.some(u=>u.id===id))id=list[0]?.id||'';
+  if(!id){
+    db={}; normalize(); return;
+  }
+  setCurrentUserId(id);
+  let raw=localStorage.getItem(userKey(id));
+
+  // 僅對第一個舊帳戶執行一次舊版資料遷移。
+  if(!raw && id===DEFAULT_USER_ID){
+    raw=localStorage.getItem(KEY) ||
+        localStorage.getItem(OLD_KEY) ||
+        localStorage.getItem('health_manager_v125_final') ||
+        localStorage.getItem('health_manager_v124_final') ||
+        localStorage.getItem('health_manager_v123_final');
+  }
+
   if(raw){
-    try{
-      db=JSON.parse(raw);
-    }catch(e){}
-  }else if(id===DEFAULT_USER_ID){
-    const legacy=localStorage.getItem(KEY)||localStorage.getItem(OLD_KEY);
-    if(legacy){
-      try{
-        db=JSON.parse(legacy);
-        saveCurrentDb();
-      }catch(e){}
-    }
+    try{db=JSON.parse(raw);}catch(e){db={};}
   }else{
-    db={
-      profile:{height:0,weight:0,age:0,sex:'',activity:'normal'},
-      water:[],drinks:[],foods:[],bowel:[],weights:[],
-      income:[],expense:[],salaryDay:5
-    };
-    saveCurrentDb();
+    db={};
   }
   normalize();
-  // 目前使用者的資料也同步保存一次，確保切換後不會遺失。
-  if(typeof userKey==='function') localStorage.setItem(userKey(id),JSON.stringify(db));
+  localStorage.setItem(userKey(id),JSON.stringify(db));
 }
-
 function renderUserSwitcher(){
   const list=getUserIndex();
-  let current=getCurrentUserId();
+  const currentId=getCurrentUserId();
+  const current=list.find(u=>u.id===currentId);
 
-  if(!list.some(u=>u.id===current)){
-    current=list[0].id;
-    setCurrentUserId(current);
-  }
+  document.querySelectorAll('#userSelect').forEach(select=>{
+    const fragment=document.createDocumentFragment();
+    list.forEach(u=>{
+      const option=document.createElement('option');
+      option.value=u.id;
+      option.textContent=u.name||'未命名使用者';
+      option.selected=(u.id===currentId);
+      fragment.appendChild(option);
+    });
+    select.replaceChildren(fragment);
+  });
 
-  const select=$('userSelect');
-  if(select){
-    select.innerHTML=list.map(u=>
-      `<option value="${u.id}">${u.name}</option>`
-    ).join('');
-    select.value=current;
-  }
-
-  const u=list.find(x=>x.id===current)||list[0];
-  const name=u?.name||'使用者 1';
-
-  if($('currentUserBadge'))$('currentUserBadge').textContent=name;
-  if($('sidebarCurrentUser'))$('sidebarCurrentUser').textContent=name;
-  if($('topCurrentUser'))$('topCurrentUser').textContent='👤 '+name;
+  document.querySelectorAll('#currentUserBadge').forEach(el=>{
+    el.textContent=current?.name||'尚未建立使用者';
+  });
+  document.querySelectorAll('.current-user-name').forEach(el=>{
+    el.textContent=current?.name||'尚未建立使用者';
+  });
+}
+function refreshUserUI(){
+  renderUserSwitcher();
+  render();
 }
 function switchUser(id){
-  if(!id)return;
   const list=getUserIndex();
-  const target=list.find(u=>u.id===id);
-  if(!target)return;
+  if(!id || !list.some(u=>u.id===id))return;
+  const oldId=getCurrentUserId();
+  if(id===oldId){
+    renderUserSwitcher();
+    return;
+  }
 
+  // 只儲存一次舊帳戶，不重新走 showPage。
+  saveCurrentDb();
   setCurrentUserId(id);
   loadUserData(id);
-  loadProfile();
-  render();
-  renderUserSwitcher();
-  showPage('profile');
-  toast('目前使用者：'+target.name);
+  refreshUserUI();
+  scrollTo(0,0);
+  toast('已切換使用者');
 }
-
-
-function getDefaultUserId(){
-  return localStorage.getItem('health_manager_default_user') || '';
-}
-
-function setDefaultUserId(id){
-  if(!id){
-    localStorage.removeItem('health_manager_default_user');
-    return;
-  }
-  localStorage.setItem('health_manager_default_user', id);
-}
-
-function setDefaultCurrentUser(){
-  const id=getCurrentUserId();
-  if(!id) return;
-  setDefaultUserId(id);
-  renderUserSwitcher();
-  render();
-  toast('已設定為預設開啟使用者');
-}
-
-function clearDefaultUserIfMissing(){
-  const list=getUserIndex();
-  const defaultId=getDefaultUserId();
-  if(defaultId && !list.some(u=>u.id===defaultId)){
-    setDefaultUserId(list[0]?.id || '');
-  }
-}
-
-function deleteCurrentUser(){
-  const list=getUserIndex();
-  const currentId=getCurrentUserId();
-  if(!currentId) return;
-
-  if(list.length<=1){
-    toast('目前只剩 1 位使用者，無法刪除');
-    return;
-  }
-
-  const current=list.find(u=>u.id===currentId);
-  const name=current?.name || '目前使用者';
-
-  if(!confirm(`確定要刪除「${name}」嗎？\n\n這會永久刪除此使用者的健康與財務資料，且無法復原。`)){
-    return;
-  }
-
-  if(!confirm(`再次確認：刪除「${name}」及其全部資料？`)){
-    return;
-  }
-
-  localStorage.removeItem(userKey(currentId));
-
-  const remaining=list.filter(u=>u.id!==currentId);
-  saveUserIndex(remaining);
-
-  if(getDefaultUserId()===currentId){
-    setDefaultUserId(remaining[0]?.id || '');
-  }
-
-  const nextId=remaining[0].id;
-  setCurrentUserId(nextId);
-  loadUserData(nextId);
-  renderUserSwitcher();
-  render();
-  showPage('profile');
-  toast(`已刪除「${name}」，目前切換至「${remaining[0].name}」`);
-}
-
 function renameCurrentUser(){
-  const current=getCurrentUserId();
-  const list=getUserIndex();
-  const user=list.find(u=>u.id===current);
+  const id=getCurrentUserId();
+  const user=getUserIndex().find(u=>u.id===id);
   if(!user)return;
 
-  const existing=document.getElementById('renameUserDialog');
-  if(existing){existing.remove();return;}
-
-  const wrap=document.createElement('div');
-  wrap.id='renameUserDialog';
-  wrap.className='new-user-dialog';
-  wrap.innerHTML=`
-    <div class="new-user-box">
-      <div class="new-user-title">修改使用者名稱</div>
-      <div class="new-user-desc">目前名稱：${escapeHtml(user.name)}</div>
-      <label>使用者名稱
-        <input id="renameUserName" type="text" maxlength="20" value="${escapeHtml(user.name)}" placeholder="請輸入名稱">
-      </label>
-      <div class="new-user-actions">
-        <button type="button" class="btn secondary" onclick="closeRenameUserDialog()">取消</button>
-        <button type="button" class="btn primary" onclick="confirmRenameUser()">儲存名稱</button>
-      </div>
-    </div>`;
-  document.body.appendChild(wrap);
-
+  const dialog=document.getElementById('renameUserDialog');
   const input=document.getElementById('renameUserName');
-  if(input){
+  if(dialog&&input){
+    input.value=user.name||'';
+    dialog.classList.add('show');
     input.focus();
     input.select();
-    input.addEventListener('keydown',e=>{
-      if(e.key==='Enter')confirmRenameUser();
-      if(e.key==='Escape')closeRenameUserDialog();
-    });
+  }else{
+    const name=prompt('請輸入新的使用者名稱',user.name||'');
+    if(name!==null)renameUserByName(name);
   }
 }
-
-function closeRenameUserDialog(){
-  document.getElementById('renameUserDialog')?.remove();
+function renameUserByName(name){
+  const clean=String(name||'').trim();
+  if(!clean){toast('使用者名稱不可空白');return false;}
+  const id=getCurrentUserId();
+  const list=getUserIndex();
+  const user=list.find(u=>u.id===id);
+  if(!user)return false;
+  user.name=clean;
+  saveUserIndex(list);
+  renderUserSwitcher();
+  toast('使用者名稱已更新');
+  return true;
 }
-
+function closeRenameUserDialog(){
+  document.getElementById('renameUserDialog')?.classList.remove('show');
+}
 function confirmRenameUser(){
   const input=document.getElementById('renameUserName');
-  const name=(input?.value||'').trim();
-  if(!name){
-    toast('請輸入使用者名稱');
-    input?.focus();
-    return;
-  }
-
-  const current=getCurrentUserId();
-  const list=getUserIndex();
-  const user=list.find(u=>u.id===current);
-  if(!user)return;
-
-  if(list.some(u=>u.id!==current && u.name===name)){
-    toast('已有相同名稱的使用者');
-    input?.focus();
-    return;
-  }
-
-  user.name=name;
-  saveUserIndex(list);
-  closeRenameUserDialog();
-  renderUserSwitcher();
-  toast('使用者名稱已改為「'+name+'」');
+  if(renameUserByName(input?.value||''))closeRenameUserDialog();
 }
-
 function escapeHtml(value){
   return String(value??'')
     .replace(/&/g,'&amp;')
@@ -1818,80 +1713,90 @@ function escapeHtml(value){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#039;');
 }
-
-function addUser(){
-  const existing=document.getElementById('newUserDialog');
-  if(existing){ existing.remove(); return; }
-
-  const wrap=document.createElement('div');
-  wrap.id='newUserDialog';
-  wrap.className='new-user-dialog';
-  wrap.innerHTML=`
-    <div class="new-user-box">
-      <div class="new-user-title">新增使用者</div>
-      <div class="new-user-desc">建立後會立即切換到這位使用者，資料與其他使用者分開保存。</div>
-      <label>使用者名稱
-        <input id="newUserName" type="text" maxlength="20" placeholder="例如：自己、爸爸、媽媽">
-      </label>
-      <div class="new-user-actions">
-        <button type="button" class="btn secondary" onclick="closeNewUserDialog()">取消</button>
-        <button type="button" class="btn primary" onclick="confirmAddUser()">建立使用者</button>
-      </div>
-    </div>`;
-  document.body.appendChild(wrap);
-
-  const input=document.getElementById('newUserName');
-  if(input){
-    input.focus();
-    input.addEventListener('keydown',e=>{
-      if(e.key==='Enter') confirmAddUser();
-      if(e.key==='Escape') closeNewUserDialog();
-    });
-  }
-}
-
-function closeNewUserDialog(){
-  document.getElementById('newUserDialog')?.remove();
-}
-
-function confirmAddUser(){
-  const input=document.getElementById('newUserName');
-  const cleanName=(input?.value||'').trim();
-  if(!cleanName){
-    toast('請輸入使用者名稱');
-    input?.focus();
-    return;
-  }
+function createUser(name){
+  const clean=String(name||'').trim();
+  if(!clean){toast('請輸入使用者名稱');return false;}
 
   const list=getUserIndex();
-  if(list.some(u=>u.name===cleanName)){
-    toast('已有相同名稱的使用者');
-    input?.focus();
-    return;
-  }
-
   const id='user_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
-  list.push({id:id,name:cleanName});
-  saveUserIndex(list);
-  setCurrentUserId(id);
 
-  db={
+  list.push({id:id,name:clean});
+  saveUserIndex(list);
+
+  const emptyDb={
     profile:{height:0,weight:0,age:0,sex:'',activity:'normal'},
     water:[],drinks:[],foods:[],bowel:[],weights:[],
-    income:[],expense:[],salaryDay:5
+    finance:[],income:[],expense:[],salaryDay:5
   };
+  localStorage.setItem(userKey(id),JSON.stringify(emptyDb));
+
+  // 新帳戶建立後直接成為目前使用者，但不改變預設使用者。
+  setCurrentUserId(id);
+  db=emptyDb;
   normalize();
   localStorage.setItem(userKey(id),JSON.stringify(db));
 
-  closeNewUserDialog();
-  loadUserData(id);
-  renderUserSwitcher();
-  loadProfile();
-  render();
-  renderUserSwitcher();
+  refreshUserUI();
   showPage('profile');
-  toast('已建立「'+cleanName+'」，目前使用者已切換');
+  toast('已新增「'+clean+'」');
+  return true;
 }
+function addUser(){
+  const dialog=document.getElementById('newUserDialog');
+  const input=document.getElementById('newUserName');
+
+  if(dialog&&input){
+    input.value='';
+    dialog.classList.add('show');
+    setTimeout(()=>input.focus(),50);
+  }else{
+    const name=prompt('請輸入新的使用者名稱','');
+    if(name!==null)createUser(name);
+  }
+}
+function closeNewUserDialog(){
+  document.getElementById('newUserDialog')?.classList.remove('show');
+}
+function confirmAddUser(){
+  const input=document.getElementById('newUserName');
+  if(createUser(input?.value||''))closeNewUserDialog();
+}
+function setDefaultCurrentUser(){
+  const id=getCurrentUserId();
+  if(!id)return;
+  setDefaultUserId(id);
+  toast('已設定為預設使用者');
+}
+function deleteCurrentUser(){
+  const list=getUserIndex();
+  const id=getCurrentUserId();
+
+  if(list.length<=1){
+    toast('目前只剩 1 位使用者，無法刪除');
+    return;
+  }
+
+  const user=list.find(u=>u.id===id);
+  const name=user?.name||'目前使用者';
+
+  if(!confirm('確定要刪除「'+name+'」嗎？\n\n健康與財務資料都會永久刪除，且無法復原。'))return;
+  if(!confirm('再次確認：刪除「'+name+'」及其全部資料？'))return;
+
+  localStorage.removeItem(userKey(id));
+
+  const remaining=list.filter(u=>u.id!==id);
+  saveUserIndex(remaining);
+
+  if(getDefaultUserId()===id)setDefaultUserId(remaining[0].id);
+
+  const nextId=remaining[0].id;
+  setCurrentUserId(nextId);
+  loadUserData(nextId);
+  refreshUserUI();
+  showPage('profile');
+  toast('已刪除「'+name+'」');
+}
+
 function clearCurrentUser(){
   const current=getCurrentUserId();
   const list=getUserIndex();
@@ -1946,5 +1851,27 @@ setTimeout(renderAnalysisPages,50);
 setTimeout(()=>{const d=document.querySelector('.finance-details');if(d&&d.open)drawFinanceCharts()},100);
 
 window.addEventListener('resize',()=>setTimeout(renderAnalysisPages,50));
+
+// Robust user controls v2.1
+document.addEventListener('change',function(e){
+  if(e.target && e.target.id==='userSelect') switchUser(e.target.value);
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){
+    if(e.target.closest?.('#newUserDialog')) closeNewUserDialog();
+    if(e.target.closest?.('#renameUserDialog')) closeRenameUserDialog();
+  }
+  if(e.key==='Enter'){
+    if(e.target.closest?.('#newUserDialog')) confirmAddUser();
+    if(e.target.closest?.('#renameUserDialog')) confirmRenameUser();
+  }
+});
+
+// USER_SWITCH_DELEGATION_V22
+document.addEventListener('change',function(e){
+  if(e.target && e.target.id==='userSelect'){
+    switchUser(e.target.value);
+  }
+});
 </script>
 </body></html>
