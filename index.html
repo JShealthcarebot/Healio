@@ -9,7 +9,7 @@
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
 .app{min-height:100vh}.sidebar{position:fixed;left:0;top:0;bottom:0;width:170px;background:linear-gradient(180deg,#082a4b,#062542);color:#fff;padding:16px 12px;overflow:auto;z-index:20}.brand{display:flex;align-items:center;gap:8px;font-weight:900;font-size:16px;margin:4px 6px 18px}.brand-icon{width:40px;height:40px;border-radius:13px;background:#dff5ff;display:grid;place-items:center;font-size:25px}.brand small{display:block;font-size:10px;opacity:.8;margin-top:2px}.navgroup{font-size:10px;color:#b6c8da;margin:15px 8px 6px}.nav{width:100%;border:0;background:transparent;color:#dce8f3;text-align:left;padding:9px 10px;border-radius:9px;font-size:12px;margin:2px 0}.nav:hover,.nav.active{background:#1778ef;color:#fff}.cycle{margin:22px 3px 10px;padding:11px 8px;border-radius:10px;background:rgba(255,255,255,.08);font-size:10px;line-height:1.8;text-align:center}.mascot{text-align:center;font-size:48px;margin-top:25px}.motto{text-align:center;font-size:10px;line-height:1.6;color:#dbe8f4}
 .main{margin-left:170px;width:calc(100% - 170px);box-sizing:border-box;padding:22px 28px 42px;min-height:100vh}.page{display:none}.page.active{display:block}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.greeting{font-size:18px;font-weight:900}.date{font-size:13px;font-weight:800}.section-title{font-size:15px;font-weight:900;margin:14px 0 9px}
-.quick{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.quick button{min-height:67px;border:1px solid var(--line);border-radius:12px;background:#fff;text-align:center;transition:.15s}.quick button:hover{transform:translateY(-1px);box-shadow:0 5px 16px #14233b12}.qicon{display:block;font-size:23px}.qname{font-weight:900;font-size:13px}.qsub{font-size:10px;color:var(--muted)}.qwater{background:#f4f9ff!important;border-color:#d6e8ff!important}.qdrink{background:#f5fbf7!important}.qfood{background:#fff9f0!important}.qbowel{background:#faf7ff!important}.qincome{background:#f4fbf8!important}.qexpense{background:#fff7f6!important}
+.quick{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}.quick button{min-height:67px;border:1px solid var(--line);border-radius:12px;background:#fff;text-align:center;transition:.15s}.quick button:hover{transform:translateY(-1px);box-shadow:0 5px 16px #14233b12}.qicon{display:block;font-size:23px}.qname{font-weight:900;font-size:13px}.qsub{font-size:10px;color:var(--muted)}.qwater{background:#f4f9ff!important;border-color:#d6e8ff!important}.qdrink{background:#f5fbf7!important}.qfood{background:#fff9f0!important}.qbowel{background:#faf7ff!important}.qincome{background:#f4fbf8!important}.qexpense{background:#fff7f6!important}
 .card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px;box-shadow:0 2px 7px #14233b08}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.metric{min-height:142px}.metric-head{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:#35465d}.metric-icon{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;font-size:19px}.blue{background:#e8f3ff}.orange{background:#fff0df}.purple{background:#efe8ff}.green{background:#ddf7ed}.big{font-size:23px;font-weight:900;margin:8px 0 2px}.unit{font-size:12px}.sub{font-size:10px;color:var(--muted)}.progress{height:11px;background:#e7edf4;border-radius:99px;overflow:hidden;margin:10px 0 5px}.progress i{display:block;height:100%;border-radius:99px;background:var(--blue)}.progress.orange i{background:var(--orange)}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.health-big{min-height:185px}.health-big h3{margin:0;font-size:14px;color:#126ee2}.health-big.orange h3{color:#f47c0a}.hero-num{font-size:24px;font-weight:900;margin-top:12px}.hero-num span{font-size:13px}.bar-lg{height:15px;background:#e5eef9;border-radius:99px;overflow:hidden;margin:12px 0}.bar-lg i{display:block;height:100%;background:var(--blue);border-radius:99px}.bar-lg.orange{background:#fcebdd}.bar-lg.orange i{background:var(--orange)}.tip{margin-top:10px;padding:8px 10px;background:#f6faff;border:1px solid #e2edf9;border-radius:8px;font-size:10px}
 .bowel-summary{border:1px solid #80c99b;background:#fbfffc;border-radius:11px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}.bowel-summary strong{font-size:14px}.bowel-summary .latest{font-size:11px;color:#66786f}.expand{border:0;background:transparent;color:#3c9a5c;font-size:11px;font-weight:800}.bowel-panel{display:none;margin-top:8px}.bowel-panel.open{display:block}
@@ -414,6 +414,26 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
   .profile-user-select{min-width:100%;flex-basis:100%}
   .profile-user-controls .btn,.profile-user-controls .danger-btn{flex:1;min-width:140px}
 }
+
+/* v2.3 今日體重快速新增 */
+.weight-title-row{display:flex;align-items:center;gap:7px}
+.weight-title-row h4{margin:2px 0 3px!important}
+.mini-add-weight{width:24px;height:24px;border:0;border-radius:8px;display:grid;place-items:center;background:#e7f8f5;color:#149b9b;font-size:19px;line-height:1;font-weight:900;cursor:pointer;padding:0}
+.mini-add-weight:hover{background:#d6f2ed}
+.qweight .qicon{font-size:26px;font-weight:900;line-height:1}
+.qweight{border-color:#bfe9e2;background:#f5fcfb}
+
+/* v2.4 排便快速新增 */
+.bowel-title-row{display:flex;align-items:center;gap:7px}
+.bowel-title-row h4{margin:2px 0 3px!important}
+.mini-add-bowel{
+  width:24px;height:24px;border:0;border-radius:8px;
+  display:grid;place-items:center;
+  background:#f0eaff;color:#6849cc;
+  font-size:19px;line-height:1;font-weight:900;
+  cursor:pointer;padding:0;
+}
+.mini-add-bowel:hover{background:#e6ddff}
 </style>
 
 <style>
@@ -945,7 +965,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 <button class="qwater" onclick="waterModal()"><span class="qicon">💧</span><span class="qname">補水</span><span class="qsub">自訂輸入 mL</span></button>
 <button class="qdrink" onclick="drinkModal()"><span class="qicon">🥤</span><span class="qname">飲品</span><span class="qsub">記錄飲品</span></button>
 <button class="qfood" onclick="foodModal()"><span class="qicon">🍴</span><span class="qname">食物</span><span class="qsub">記錄食物</span></button>
-<button class="qbowel" onclick="bowelModal()"><span class="qicon">🚽</span><span class="qname">排便</span><span class="qsub">記錄排便</span></button>
+<button class="qbowel" onclick="bowelModal()"><span class="qicon">🚽</span><span class="qname">排便</span><span class="qsub">記錄排便</span></button><button class="qweight" onclick="weightModal()"><span class="qicon">＋</span><span class="qname">體重</span><span class="qsub">新增今日體重</span></button>
 <button class="qincome" onclick="financeModal('income')"><span class="qicon">💵</span><span class="qname">收入</span><span class="qsub">記錄收入</span></button>
 <button class="qexpense" onclick="financeModal('expense')"><span class="qicon">🧾</span><span class="qname">支出</span><span class="qsub">記錄支出</span></button>
 </div>
@@ -965,7 +985,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
     <div class="other-health-panel bowel-panel">
       <div class="other-panel-icon">🚽</div>
       <div class="other-panel-content">
-        <h4>排便次數</h4>
+        <div class="bowel-title-row"><h4>排便次數</h4><button type="button" class="mini-add-bowel" onclick="bowelModal()" title="新增今日排便" aria-label="新增今日排便">＋</button></div>
         <div class="other-panel-value"><b id="bowelCount">0</b><span>次</span></div>
         <div class="other-status" id="bowelStatus">尚無紀錄</div>
       </div>
@@ -982,7 +1002,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
     <div class="other-health-panel weight-panel">
       <div class="other-panel-icon">⚖️</div>
       <div class="other-panel-content">
-        <h4>今日體重</h4>
+        <div class="weight-title-row"><h4>今日體重</h4><button type="button" class="mini-add-weight" onclick="weightModal()" title="新增今日體重" aria-label="新增今日體重">＋</button></div>
         <div class="other-panel-value"><b id="weightNow">--</b><span>kg</span></div>
         <div class="other-status weight-status">尚無紀錄</div>
       </div>
@@ -1006,8 +1026,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 <div class="card health-big orange"><h3>今日熱量進度</h3><div class="hero-num"><span id="calHero">0</span> <span>/ <span id="calHeroGoal">2,000</span> kcal</span></div><div class="bar-lg orange"><i id="calHeroBar"></i></div><div class="tip">🔥 剩餘 <span id="calRemain">2,000</span> kcal</div></div>
 </div>
 
-<div class="section-title">排便狀況</div><div class="bowel-summary"><div><strong>🟢 排便狀況</strong>　今日排便 <b id="bsummaryCount">0</b> 次　<span class="latest" id="bsummaryLatest">尚無紀錄</span></div><button class="expand" onclick="toggleBowel()">點擊展開查看詳細紀錄⌄</button></div>
-<div id="bowelPanel" class="bowel-panel"><div class="card"><div class="records"><div><h3>型態與排便量</h3><div id="bowelDetail"></div></div><div><h3>今日歷史紀錄</h3><div id="bowelTodayList"></div></div></div><div class="actions"><button class="outline" onclick="bowelModal()">＋ 新增排便紀錄</button></div></div></div>
+<div><h3>今日歷史紀錄</h3><div id="bowelTodayList"></div></div></div><div class="actions"><button class="outline" onclick="bowelModal()">＋ 新增排便紀錄</button></div></div></div>
 
 <div class="section-title">飲品／食物紀錄</div><div class="records">
 <div class="card list-card"><h3>🥤 今日飲品紀錄 <span style="float:right;color:#2879dc;cursor:pointer" onclick="showPage('drink')">查看全部 ›</span></h3><div id="todayDrinkList"></div><button class="outline" onclick="drinkModal()">＋ 新增飲品</button></div>
