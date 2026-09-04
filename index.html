@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v3.4</title>
+<title>健康管家 v3.5</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -1010,16 +1010,16 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
   <div class="brand-icon">💧</div>
   <div>健康管家<small>v1.2.7</small></div>
 </div>
-<div class="sidebar-current-user" onclick="showPage('profile')" title="前往使用者管理">
+<div class="sidebar-current-user" title="前往使用者管理">
   <span class="sidebar-user-dot">●</span>
   <span>目前使用者：</span>
   <strong id="sidebarCurrentUser">我的帳戶</strong>
 </div>
-<button class="nav active" data-page="dashboard" type="button" onclick="showPage('dashboard')">🏠 <span>首頁總覽</span></button>
-<div class="navgroup">健康記錄</div><button class="nav" data-page="water" type="button" onclick="showPage('water')">💧 <span>補水紀錄</span></button><button class="nav" data-page="drink" type="button" onclick="showPage('drink')">🥤 <span>飲品紀錄</span></button><button class="nav" data-page="food" type="button" onclick="showPage('food')">🍴 <span>食物紀錄</span></button><button class="nav" data-page="bowel" type="button" onclick="showPage('bowel')">🚽 <span>排便紀錄</span></button><button class="nav" data-page="weight" type="button" onclick="showPage('weight')">⚖️ <span>體重紀錄</span></button>
-<div class="navgroup">數據分析</div><button class="nav" data-page="trends" type="button" onclick="showPage('trends')">📈 <span>健康趨勢</span></button><button class="nav" data-page="calories" type="button" onclick="showPage('calories')">📊 <span>熱量分析</span></button>
-<div class="navgroup">財務記帳</div><button class="nav" data-page="income" type="button" onclick="showPage('income')">💵 <span>收入記錄</span></button><button class="nav" data-page="expense" type="button" onclick="showPage('expense')">🧾 <span>支出記錄</span></button>
-<div class="navgroup">設定</div><button class="nav" data-page="profile" type="button" onclick="showPage('profile')">⚙️ <span>基本資料</span></button><button class="nav" data-page="salary" type="button" onclick="showPage('salary')">🗓️ <span>發薪日設定</span></button><button class="nav" data-page="reminder" type="button" onclick="showPage('reminder')">🔔 <span>提醒設定</span></button><button class="nav" data-page="about" type="button" onclick="showPage('about')">ℹ️ <span>關於我們</span></button>
+<button class="nav active" data-page="dashboard" type="button">🏠 <span>首頁總覽</span></button>
+<div class="navgroup">健康記錄</div><button class="nav" data-page="water" type="button">💧 <span>補水紀錄</span></button><button class="nav" data-page="drink" type="button">🥤 <span>飲品紀錄</span></button><button class="nav" data-page="food" type="button">🍴 <span>食物紀錄</span></button><button class="nav" data-page="bowel" type="button">🚽 <span>排便紀錄</span></button><button class="nav" data-page="weight" type="button">⚖️ <span>體重紀錄</span></button>
+<div class="navgroup">數據分析</div><button class="nav" data-page="trends" type="button">📈 <span>健康趨勢</span></button><button class="nav" data-page="calories" type="button">📊 <span>熱量分析</span></button>
+<div class="navgroup">財務記帳</div><button class="nav" data-page="income" type="button">💵 <span>收入記錄</span></button><button class="nav" data-page="expense" type="button">🧾 <span>支出記錄</span></button>
+<div class="navgroup">設定</div><button class="nav" data-page="profile" type="button">⚙️ <span>基本資料</span></button><button class="nav" data-page="salary" type="button">🗓️ <span>發薪日設定</span></button><button class="nav" data-page="reminder" type="button">🔔 <span>提醒設定</span></button><button class="nav" data-page="about" type="button">ℹ️ <span>關於我們</span></button>
 <div class="cycle">本期記帳週期<br><b id="sidePeriod">--/-- ～ --/--</b><br><span id="sideRemain">尚餘 -- 天</span></div><div class="mascot">💧</div><div class="motto">每天一小步<br>健康一大步！</div>
 </aside>
 
@@ -1092,8 +1092,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 </div>
 
 <div class="section-title">飲品／食物紀錄</div><div class="records">
-<div class="card list-card"><h3>🥤 今日飲品紀錄 <span style="float:right;color:#2879dc;cursor:pointer" onclick="showPage('drink')">查看全部 ›</span></h3><div id="todayDrinkList"></div><button class="outline" onclick="drinkModal()">＋ 新增飲品</button></div>
-<div class="card list-card"><h3>🍴 今日食物紀錄 <span style="float:right;color:#2879dc;cursor:pointer" onclick="showPage('food')">查看全部 ›</span></h3><div id="todayFoodList"></div><button class="outline" onclick="foodModal()">＋ 新增食物</button></div>
+<div class="card list-card"><h3>🥤 今日飲品紀錄 <span style="float:right;color:#2879dc;cursor:pointer">查看全部 ›</span></h3><div id="todayDrinkList"></div><button class="outline" onclick="drinkModal()">＋ 新增飲品</button></div>
+<div class="card list-card"><h3>🍴 今日食物紀錄 <span style="float:right;color:#2879dc;cursor:pointer">查看全部 ›</span></h3><div id="todayFoodList"></div><button class="outline" onclick="foodModal()">＋ 新增食物</button></div>
 </div>
 
 <div class="section-title">7 日健康趨勢</div><div class="charts">
@@ -1125,7 +1125,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 </div>
 </details>
 
-<div class="finance-cycle">發薪日：每月 <span id="salaryDayLabel">5</span> 日　｜　週期：<span id="financePeriod2"></span> <button class="secondary" onclick="showPage('salary')">設定</button></div>
+<div class="finance-cycle">發薪日：每月 <span id="salaryDayLabel">5</span> 日　｜　週期：<span id="financePeriod2"></span> <button class="secondary">設定</button></div>
 <div class="finance-hidden-data" aria-hidden="true"><div id="finIncomeList"></div><div id="finCats"></div><div id="finExpenseList"></div></div>
 </div>
 </section>
@@ -1252,11 +1252,11 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
   <div class="profile-user-controls">
     <label class="profile-user-select">
       <span>目前使用者</span>
-      <select id="userSelect" onchange="switchUser(this.value)"></select>
+      <select id="userSelect"></select>
     </label>
     <div class="user-control-note" style="width:100%;font-size:13px;color:#718096;margin-top:-2px">選擇上方使用者後，修改名稱、清除資料、刪除使用者都會套用到「目前使用者」。</div>
     <button class="btn secondary" type="button" onclick="renameCurrentUser()">✎ 修改名稱</button>
-    <button class="btn secondary" type="button" onclick="openNewUserDialog();return false;">＋新增使用者</button>
+    <button class="btn secondary" type="button">＋新增使用者</button>
     <button class="btn danger-outline profile-clear-btn" type="button" onclick="clearCurrentUser()">🗑 清除目前使用者資料</button>
 <button class="danger-btn" type="button" onclick="deleteCurrentUser()">❌ 刪除目前使用者</button>
   </div><div class="muted" style="margin-top:8px;font-size:13px">⭐ 預設使用者只決定下次開啟網站時先進入哪個帳戶；目前使用者仍可自由切換。</div>
@@ -1289,9 +1289,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
   </div>
 </div>
 </section>
-<section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" type="button" onclick="saveSalary()">儲存設定</button></div></div></section>
+<section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" type="button" id="saveSalaryBtn">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v3.4</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v3.5</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
 
@@ -1665,7 +1665,7 @@ document.addEventListener('change',function(e){
     <p>建立新的健康與財務資料帳戶。</p>
     <input id="newUserName" type="text" maxlength="30" placeholder="請輸入使用者名稱">
     <div class="user-dialog-actions">
-      <button type="button" class="user-dialog-cancel" onclick="closeNewUserDialog()">取消</button>
+      <button type="button" class="user-dialog-cancel">取消</button>
       <button type="button" class="user-dialog-ok" onclick="confirmAddUser()">建立使用者</button>
     </div>
   </div>
@@ -1683,32 +1683,36 @@ document.addEventListener('change',function(e){
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded',function(){
-  try{
-    ensureUserIndex();
-    const uid=getCurrentUserId();
-    if(uid){
-      loadUserData(uid);
-      setCurrentUserId(uid);
-    }
-    renderUserSwitcher();
-
-    const userSelect=document.getElementById('userSelect');
-    if(userSelect) userSelect.onchange=function(){ switchUser(this.value); };
-
-    const salaryBtn=document.querySelector('[onclick*="saveSalary"],#saveSalaryBtn');
-    if(salaryBtn) salaryBtn.onclick=function(e){e.preventDefault();saveSalary();};
-
-    const addBtn=document.getElementById('addUserBtn');
-    if(addBtn) addBtn.onclick=function(e){e.preventDefault();openNewUserDialog();};
-
-    const confirmUser=document.getElementById('confirmNewUser');
-    if(confirmUser) confirmUser.onclick=function(e){e.preventDefault();createUser();};
-
-    showPage('home');
-  }catch(err){
-    console.error('初始化失敗:',err);
+(function(){
+  function bind(id,event,fn){
+    var el=document.getElementById(id);
+    if(!el)return;
+    el.addEventListener(event,function(e){
+      try{e.preventDefault();fn(e);}catch(err){console.error('操作失敗 '+id,err);}
+    });
   }
-});
+  function boot(){
+    try{
+      if(typeof ensureUserIndex==='function') ensureUserIndex();
+      var uid=typeof getCurrentUserId==='function'?getCurrentUserId():'';
+      if(uid && typeof loadUserData==='function') loadUserData(uid);
+      if(typeof renderUserSwitcher==='function') renderUserSwitcher();
+
+      document.querySelectorAll('.nav[data-page]').forEach(function(el){
+        el.addEventListener('click',function(e){
+          e.preventDefault();
+          if(typeof showPage==='function') showPage(el.dataset.page);
+        });
+      });
+      bind('userSelect','change',function(e){if(typeof switchUser==='function')switchUser(e.target.value);});
+      bind('addUserBtn','click',function(){if(typeof openNewUserDialog==='function')openNewUserDialog();});
+      bind('confirmNewUser','click',function(){if(typeof createUser==='function')createUser();});
+      bind('saveSalaryBtn','click',function(){if(typeof saveSalary==='function')saveSalary();});
+      if(typeof showPage==='function')showPage('home');
+    }catch(err){console.error('初始化錯誤',err);}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
+  else boot();
+})();
 </script>
 </body></html>
