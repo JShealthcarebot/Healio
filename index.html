@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v3.7</title>
+<title>健康管家 v4.3</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -1019,7 +1019,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 <div class="navgroup">健康記錄</div><button class="nav" data-page="water" type="button">💧 <span>補水紀錄</span></button><button class="nav" data-page="drink" type="button">🥤 <span>飲品紀錄</span></button><button class="nav" data-page="food" type="button">🍴 <span>食物紀錄</span></button><button class="nav" data-page="bowel" type="button">🚽 <span>排便紀錄</span></button><button class="nav" data-page="weight" type="button">⚖️ <span>體重紀錄</span></button>
 <div class="navgroup">數據分析</div><button class="nav" data-page="trends" type="button">📈 <span>健康趨勢</span></button><button class="nav" data-page="calories" type="button">📊 <span>熱量分析</span></button>
 <div class="navgroup">財務記帳</div><button class="nav" data-page="income" type="button">💵 <span>收入記錄</span></button><button class="nav" data-page="expense" type="button">🧾 <span>支出記錄</span></button>
-<div class="navgroup">設定</div><button class="nav" data-page="profile" type="button">⚙️ <span>基本資料</span></button><button class="nav" data-page="salary" type="button">🗓️ <span>發薪日設定</span></button><button class="nav" data-page="reminder" type="button">🔔 <span>提醒設定</span></button><button class="nav" data-page="about" type="button">ℹ️ <span>關於我們</span></button>
+<div class="navgroup">設定</div><button class="nav" data-page="profile" type="button">⚙️ <span>基本資料</span></button><button class="nav female-only" data-page="cycle" id="cycleNav" style="display:none">🩸 <span>生理週期</span></button>
+      <button class="nav" data-page="salary" type="button">🗓️ <span>發薪日設定</span></button><button class="nav" data-page="reminder" type="button">🔔 <span>提醒設定</span></button><button class="nav" data-page="about" type="button">ℹ️ <span>關於我們</span></button>
 <div class="cycle"><b style="font-size:11px">本期記帳週期</b><br><b id="sidePeriod">--/-- ～ --/--</b><br><span id="sideRemain">尚餘 -- 天</span></div><div class="mascot">💧</div><div class="motto">每天一小步<br>健康一大步！</div>
 </aside>
 
@@ -1289,9 +1290,53 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
   </div>
 </div>
 </section>
+
+<section id="cycle" class="page">
+  <div class="card">
+    <h2>生理週期</h2>
+    <p class="tip">僅在基本資料設定為女性時顯示。日期與症狀為個人紀錄用途，下一次日期為依歷史資料推估的參考值。</p>
+
+    <div class="cycle-summary" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0">
+      <div class="stat"><span>最近月經開始</span><b id="cycleLastStart">—</b></div>
+      <div class="stat"><span>最近週期</span><b id="cycleLength">—</b></div>
+      <div class="stat"><span>下次預估</span><b id="cycleNext">—</b></div>
+    </div>
+
+    <div class="form-grid">
+      <label>月經開始日<input id="cycleStart" type="date"></label>
+      <label>月經結束日<input id="cycleEnd" type="date"></label>
+      <label>經量
+        <select id="cycleFlow">
+          <option>少量</option><option selected>中等量</option><option>大量</option>
+        </select>
+      </label>
+      <label>經痛
+        <select id="cyclePain">
+          <option value="none">無</option><option value="mild">輕微</option><option value="moderate">中等</option><option value="severe">嚴重</option>
+        </select>
+      </label>
+      <label>其他症狀
+        <input id="cycleSymptoms" type="text" placeholder="例如 腰痠、頭痛、疲倦">
+      </label>
+      <label>備註
+        <input id="cycleNote" type="text" placeholder="可選">
+      </label>
+    </div>
+
+    <div class="modal-actions" style="margin-top:14px">
+      <button class="primary" type="button" id="saveCycleBtn">儲存生理週期</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>歷史週期紀錄</h3>
+    <div id="cycleHistory"><div class="empty">尚無生理週期紀錄</div></div>
+  </div>
+</section>
+
 <section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" type="button" id="saveSalaryBtn">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v4.1</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v4.3</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
 
@@ -1349,7 +1394,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
     return {
       profile:{height:0,weight:0,age:0,sex:'',activity:'normal'},
       water:[],drinks:[],foods:[],bowel:[],weights:[],
-      finance:[],income:[],expense:[],salaryDay:5
+      finance:[],income:[],expense:[],salaryDay:5,cycles:[]
     };
   }
 
@@ -1590,7 +1635,7 @@ const DEFAULT_USER_ID='user_1';
 const DEFAULT_DB={
   profile:{height:0,weight:0,age:0,sex:'',activity:'normal'},
   water:[],drinks:[],foods:[],bowel:[],weights:[],
-  finance:[],income:[],expense:[],salaryDay:5
+  finance:[],income:[],expense:[],salaryDay:5,cycles:[]
 };
 
 function getUserIndex(){
@@ -1792,7 +1837,7 @@ function clearUserById(id){
   const emptyDb={
     profile:{height:0,weight:0,age:0,sex:'',activity:'normal'},
     water:[],drinks:[],foods:[],bowel:[],weights:[],
-    finance:[],income:[],expense:[],salaryDay:5
+    finance:[],income:[],expense:[],salaryDay:5,cycles:[]
   };
 
   localStorage.setItem(userKey(id),JSON.stringify(emptyDb));
@@ -2093,7 +2138,7 @@ document.addEventListener('change',function(e){
     var emptyDb = {
       profile:{height:0,weight:0,age:0,sex:'',activity:'normal'},
       water:[],drinks:[],foods:[],bowel:[],weights:[],
-      finance:[],income:[],expense:[],salaryDay:5
+      finance:[],income:[],expense:[],salaryDay:5,cycles:[]
     };
     localStorage.setItem('health_manager_profile_' + id, JSON.stringify(emptyDb));
 
@@ -2949,6 +2994,409 @@ document.addEventListener('change',function(e){
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);
   else boot();
+})();
+</script>
+
+
+<style>
+.cycle-summary .stat{background:#f7f9fb;border:1px solid #e6edf3;border-radius:10px;padding:10px}
+.cycle-summary .stat span{display:block;font-size:10px;color:#8793a1;margin-bottom:4px}
+.cycle-summary .stat b{font-size:15px;color:#33485f}
+.cycle-record{padding:10px 0;border-bottom:1px solid #edf1f5;font-size:11px;line-height:1.8}
+.cycle-record:last-child{border-bottom:0}
+.cycle-record .date{font-weight:900;color:#30475e}
+@media(max-width:600px){.cycle-summary{grid-template-columns:1fr!important}}
+</style>
+<script>
+/* ===== v4.2 生理週期（女性限定） ===== */
+(function(){
+  'use strict';
+  function D(id){return document.getElementById(id);}
+  function getDB(){
+    try{return (typeof db!=='undefined'&&db)?db:null;}catch(e){return null;}
+  }
+  function saveDB(){
+    var d=getDB(), id;
+    try{id=typeof getCurrentUserId==='function'?getCurrentUserId():localStorage.getItem('health_manager_current_user')||'user_1';}catch(e){}
+    if(!d||!id)return false;
+    d.cycles=Array.isArray(d.cycles)?d.cycles:[];
+    localStorage.setItem('health_manager_profile_'+id,JSON.stringify(d));
+    localStorage.setItem('health_manager_v122_final',JSON.stringify(d));
+    return true;
+  }
+  function isFemale(){
+    var d=getDB(), p=d&&d.profile||{};
+    return String(p.sex||'').toLowerCase()==='female' || p.sex==='女性';
+  }
+  function dateText(s){
+    if(!s)return '—';
+    var d=new Date(s+'T00:00:00');
+    return isNaN(d)?'—':(d.getMonth()+1)+'/'+d.getDate();
+  }
+  function fullDate(s){
+    if(!s)return '—';
+    return s.replace(/-/g,'/');
+  }
+  function addDays(s,n){
+    var d=new Date(s+'T00:00:00');
+    d.setDate(d.getDate()+n);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function diffDays(a,b){
+    return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000);
+  }
+
+  function updateVisibility(){
+    var female=isFemale();
+    document.querySelectorAll('.female-only').forEach(function(el){
+      el.style.display=female?'':'none';
+    });
+    if(!female){
+      var page=D('cycle');
+      if(page&&page.classList.contains('active')&&typeof showPage==='function')showPage('dashboard');
+    }
+    if(female)renderCycle();
+  }
+
+  function renderCycle(){
+    if(!isFemale())return;
+    var d=getDB();if(!d)return;
+    d.cycles=Array.isArray(d.cycles)?d.cycles:[];
+    var rows=d.cycles.slice().sort(function(a,b){return String(b.start||'').localeCompare(String(a.start||''));});
+    var last=rows[0];
+
+    var lastEl=D('cycleLastStart'), lenEl=D('cycleLength'), nextEl=D('cycleNext');
+    if(lastEl)lastEl.textContent=last?dateText(last.start):'—';
+
+    var lengths=[];
+    for(var i=0;i<rows.length-1;i++){
+      var x=diffDays(rows[i+1].start,rows[i].start);
+      if(x>0&&x<90)lengths.push(x);
+    }
+    var avg=lengths.length?Math.round(lengths.reduce(function(a,b){return a+b;},0)/lengths.length):null;
+    if(lenEl)lenEl.textContent=avg?avg+' 天':'—';
+    if(nextEl)nextEl.textContent=(last&&avg)?dateText(addDays(last.start,avg)):'—';
+
+    var hist=D('cycleHistory');
+    if(hist){
+      if(!rows.length){hist.innerHTML='<div class="empty">尚無生理週期紀錄</div>';return;}
+      hist.innerHTML=rows.map(function(r){
+        var days=r.end?diffDays(r.start,r.end)+1:'—';
+        return '<div class="cycle-record">'+
+          '<div class="date">開始 '+fullDate(r.start)+(r.end?'　～　'+fullDate(r.end):'')+'</div>'+
+          '<div>經量：'+(r.flow||'中等量')+'　｜　經期：'+days+(days==='—'?'':' 天')+'　｜　經痛：'+({'none':'無','mild':'輕微','moderate':'中等','severe':'嚴重'}[r.pain]||'無')+'</div>'+
+          (r.symptoms?'<div>症狀：'+r.symptoms+'</div>':'')+
+          (r.note?'<div>備註：'+r.note+'</div>':'')+
+          '</div>';
+      }).join('');
+    }
+  }
+
+  function clearForm(){
+    var today=new Date(), s=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+    if(D('cycleStart'))D('cycleStart').value=s;
+    if(D('cycleEnd'))D('cycleEnd').value='';
+    if(D('cycleFlow'))D('cycleFlow').value='中等量';
+    if(D('cyclePain'))D('cyclePain').value='none';
+    if(D('cycleSymptoms'))D('cycleSymptoms').value='';
+    if(D('cycleNote'))D('cycleNote').value='';
+  }
+
+  function saveCycle(){
+    if(!isFemale()){return false;}
+    var d=getDB();if(!d)return false;
+    var start=D('cycleStart')?.value, end=D('cycleEnd')?.value;
+    if(!start){alert('請選擇月經開始日');return false;}
+    if(end && end<start){alert('月經結束日不能早於開始日');return false;}
+    d.cycles=Array.isArray(d.cycles)?d.cycles:[];
+    d.cycles.push({
+      id:Date.now(),
+      start:start,end:end||'',
+      flow:D('cycleFlow')?.value||'中等量',
+      pain:D('cyclePain')?.value||'none',
+      symptoms:(D('cycleSymptoms')?.value||'').trim(),
+      note:(D('cycleNote')?.value||'').trim()
+    });
+    saveDB();
+    renderCycle();
+    clearForm();
+    if(typeof renderV40HealthTrends==='function')renderV40HealthTrends();
+    if(typeof toast==='function')toast('生理週期已儲存');
+    return true;
+  }
+
+  function bind(){
+    var b=D('saveCycleBtn');
+    if(b&&!b.__v42){b.__v42=true;b.onclick=function(e){e.preventDefault();saveCycle();};}
+    var q=D('quickCycleBtn');
+    if(q&&!q.__v42){q.__v42=true;q.onclick=function(e){e.preventDefault();if(typeof showPage==='function')showPage('cycle');};}
+    updateVisibility();
+  }
+
+  window.renderCycle=renderCycle;
+  window.updateCycleVisibility=updateVisibility;
+  window.saveCycle=saveCycle;
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);else bind();
+})();
+</script>
+
+
+<style>
+/* ===== v4.3 資料同步與今日摘要修復 ===== */
+.data-sync-note{font-size:10px;color:#7a8795;margin-top:6px}
+.record-list{font-size:11px}
+.record-row{padding:9px 0;border-bottom:1px solid #edf1f5;display:flex;justify-content:space-between;gap:12px}
+.record-row:last-child{border-bottom:0}
+.record-row .muted{color:#8491a0}
+</style>
+<script>
+/* ===== v4.3：統一 db 與 LocalStorage，並補齊首頁健康摘要 ===== */
+(function(){
+  'use strict';
+
+  function uid(){
+    try{return typeof getCurrentUserId==='function'?getCurrentUserId():localStorage.getItem('health_manager_current_user')||'user_1';}
+    catch(e){return localStorage.getItem('health_manager_current_user')||'user_1';}
+  }
+  function empty(){
+    return {profile:{height:0,weight:0,age:0,sex:'',activity:'normal'},water:[],drinks:[],foods:[],bowel:[],weights:[],finance:[],income:[],expense:[],salaryDay:5,cycles:[]};
+  }
+  function normalizeDb(d){
+    d=(d&&typeof d==='object')?d:empty();
+    d.profile=Object.assign({height:0,weight:0,age:0,sex:'',activity:'normal'},d.profile||{});
+    ['water','drinks','foods','bowel','weights','finance','income','expense','cycles'].forEach(function(k){
+      if(!Array.isArray(d[k]))d[k]=[];
+    });
+    var sd=Number(d.salaryDay);
+    d.salaryDay=(Number.isFinite(sd)&&sd>=1&&sd<=28)?Math.round(sd):5;
+    return d;
+  }
+  function current(){
+    try{return (typeof db!=='undefined'&&db&&typeof db==='object')?db:null;}catch(e){return null;}
+  }
+  function persist(){
+    var d=current(), id=uid();
+    if(!d||!id)return false;
+    d=normalizeDb(d);
+    try{
+      localStorage.setItem('health_manager_profile_'+id,JSON.stringify(d));
+      localStorage.setItem('health_manager_v122_final',JSON.stringify(d));
+      window.db=d;
+      return true;
+    }catch(e){console.error('v4.3 persist',e);return false;}
+  }
+
+  /* 核心修復：所有快速紀錄與切換使用者都操作同一個 db */
+  window.saveCurrentDb=function(){return persist();};
+  window.save=function(){return persist();};
+  window.loadUserData=function(id){
+    id=id||uid();
+    var raw=localStorage.getItem('health_manager_profile_'+id);
+    var d=null;
+    try{d=raw?JSON.parse(raw):null;}catch(e){d=null;}
+    if(!d){
+      try{d=JSON.parse(localStorage.getItem('health_manager_v122_final')||'null');}catch(e){d=null;}
+    }
+    d=normalizeDb(d||empty());
+    db=d;
+    window.db=d;
+    localStorage.setItem('health_manager_profile_'+id,JSON.stringify(d));
+    localStorage.setItem('health_manager_v122_final',JSON.stringify(d));
+    return d;
+  };
+
+  function keyToday(){
+    var d=new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function recKey(x){
+    var s=String((x&&x.date)||'').slice(0,10);
+    if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
+    var d=new Date((x&&x.date)||0);
+    if(isNaN(d))return '';
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function timeOf(x){
+    var s=String((x&&x.date)||'');
+    var m=s.match(/T(\d{2}:\d{2})/);
+    return m?m[1]:'--:--';
+  }
+  function dateShort(k){
+    return k?k.slice(5).replace('-','/'):'--/--';
+  }
+  function esc(s){
+    return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function renderOtherHealth(){
+    var d=current(); if(!d)return;
+    d=normalizeDb(d);
+    var today=keyToday();
+
+    /* 排便：只計今天，並顯示最後一筆 */
+    var bowel=d.bowel.filter(function(x){return recKey(x)===today;});
+    var lastB=bowel.slice().sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));})[0];
+    var bc=document.getElementById('bowelCount');
+    var bs=document.getElementById('bowelStatus');
+    var bd=document.getElementById('bowelDate');
+    var bt=document.getElementById('bowelTime');
+    var btype=document.getElementById('bowelTypeMini');
+    var bqty=document.getElementById('bowelQtyMini');
+    if(bc)bc.textContent=String(bowel.length);
+    if(bs)bs.textContent=bowel.length?'今日已有 '+bowel.length+' 次紀錄':'尚無紀錄';
+    if(bd)bd.textContent=lastB?dateShort(recKey(lastB)):'--/--/--';
+    if(bt)bt.textContent=lastB?timeOf(lastB):'--:--';
+    if(btype) btype.textContent=lastB?((window.stool&&window.stool[lastB.type])||({1:'小石頭型',2:'結塊型',3:'裂紋型',4:'黃金型 ⭐',5:'軟塊型',6:'糊狀型',7:'水狀型'})[lastB.type]||'--'):'--';
+    if(bqty)bqty.textContent=lastB?(lastB.quantity||'中等量'):'--';
+
+    /* 體重：今天最後一筆；變化取前一筆紀錄 */
+    var weights=d.weights.slice().sort(function(a,b){return String(a.date||'').localeCompare(String(b.date||''));});
+    var todayW=weights.filter(function(x){return recKey(x)===today;});
+    var lastW=todayW[todayW.length-1];
+    var prev=null;
+    if(lastW){
+      for(var i=weights.length-1;i>=0;i--){
+        if(weights[i]!==lastW && String(weights[i].date||'')<String(lastW.date||'')){prev=weights[i];break;}
+      }
+    }
+    var wn=document.getElementById('weightNow');
+    var wc=document.getElementById('weightChangeToday');
+    var wd=document.getElementById('weightDate');
+    var wt=document.getElementById('weightTime');
+    var ws=document.querySelector('.weight-status');
+    var kg=lastW?Number(lastW.weight||lastW.kg||lastW.value):0;
+    if(wn)wn.textContent=kg?kg.toFixed(1).replace(/\.0$/,''):'--';
+    if(wc)wc.textContent=(lastW&&prev)?((kg-Number(prev.weight||prev.kg||prev.value)>=0?'+':'')+(kg-Number(prev.weight||prev.kg||prev.value)).toFixed(1)+' kg'):'-- kg';
+    if(wd)wd.textContent=lastW?dateShort(recKey(lastW)):'--/--/--';
+    if(wt)wt.textContent=lastW?timeOf(lastW):'--:--';
+    if(ws)ws.textContent=lastW?'今日已記錄體重':'尚無紀錄';
+
+    /* 各紀錄頁的歷史資料 */
+    renderTable('waterTable',d.water,function(x){
+      return '<b>'+Number(x.ml||x.amount||x.value||0).toLocaleString()+' mL</b><span class="muted">'+esc(recKey(x))+' '+esc(timeOf(x))+'</span>';
+    });
+    renderTable('drinkTable',d.drinks,function(x){
+      return '<b>'+esc(x.name||'飲品')+'　'+Number(x.ml||0).toLocaleString()+' mL</b><span class="muted">'+Number(x.kcal||0)+' kcal　'+esc(recKey(x))+' '+esc(timeOf(x))+'</span>';
+    });
+    renderTable('foodTable',d.foods,function(x){
+      return '<b>'+esc(x.name||'食物')+'　'+Number(x.kcal||0).toLocaleString()+' kcal</b><span class="muted">'+esc(x.portion||'')+'　'+esc(recKey(x))+' '+esc(timeOf(x))+'</span>';
+    });
+    renderTable('bowelTable',d.bowel,function(x){
+      var nm=({1:'小石頭型',2:'結塊型',3:'裂紋型',4:'黃金型 ⭐',5:'軟塊型',6:'糊狀型',7:'水狀型'})[x.type]||'--';
+      return '<b>'+nm+'　'+esc(x.quantity||'中等量')+'</b><span class="muted">'+esc(recKey(x))+' '+esc(timeOf(x))+'</span>';
+    });
+    renderTable('weightTable',d.weights,function(x){
+      return '<b>'+Number(x.weight||x.kg||x.value||0)+' kg</b><span class="muted">'+esc(recKey(x))+' '+esc(timeOf(x))+'</span>';
+    });
+    renderTable('financeTable',d.finance,function(x){
+      return '<b>'+esc(x.name||'記帳')+'　$'+Number(x.amount||0).toLocaleString()+'</b><span class="muted">'+esc(x.category||'')+'　'+esc(recKey(x))+'</span>';
+    });
+
+    var q=D('quickCycleBtn');
+    if(q)q.style.display=(d.profile.sex==='female'||d.profile.sex==='女性')?'':'none';
+    var cn=D('cycleNav');
+    if(cn)cn.style.display=(d.profile.sex==='female'||d.profile.sex==='女性')?'':'none';
+  }
+  function D(id){return document.getElementById(id);}
+  function renderTable(id,arr,formatter){
+    var el=D(id);if(!el)return;
+    var rows=(Array.isArray(arr)?arr:[]).slice().sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});
+    if(!rows.length){el.innerHTML='<div class="empty">尚無紀錄</div>';return;}
+    el.innerHTML='<div class="record-list">'+rows.map(function(x){return '<div class="record-row">'+formatter(x)+'</div>';}).join('')+'</div>';
+  }
+
+  /* 修正首頁補水：所有液體攝取都算入補水進度；飲品熱量另計 */
+  function todayWaterAll(){
+    var d=current(), t=keyToday(), n=0;
+    (d&&d.water||[]).forEach(function(x){if(recKey(x)===t)n+=Number(x.ml||x.amount||x.value||x.volume||0);});
+    (d&&d.drinks||[]).forEach(function(x){if(recKey(x)===t)n+=Number(x.ml||x.amount||x.value||x.volume||0);});
+    return n;
+  }
+  function todayFoodCal(){
+    var d=current(),t=keyToday(),n=0;
+    (d&&d.foods||[]).forEach(function(x){if(recKey(x)===t)n+=Number(x.kcal||x.calories||0);});
+    return n;
+  }
+  function todayDrinkCal(){
+    var d=current(),t=keyToday(),n=0;
+    (d&&d.drinks||[]).forEach(function(x){if(recKey(x)===t)n+=Number(x.kcal||x.calories||0);});
+    return n;
+  }
+
+  function refreshAll(){
+    var d=current();if(!d)return;
+    normalizeDb(d);
+    window.db=d;
+    try{renderOtherHealth();}catch(e){console.error('v4.3 health summary',e);}
+    var wt=typeof waterTarget==='function'?waterTarget():1500;
+    var wc=todayWaterAll(), fc=todayFoodCal(), dc=todayDrinkCal(), tc=fc+dc;
+    var ct=typeof calorieTarget==='function'?calorieTarget():0;
+    var ids={
+      waterHeroGoal:wt.toLocaleString(),
+      waterHero:wc.toLocaleString(),
+      calHeroGoal:ct?ct.toLocaleString():'—',
+      calHero:tc.toLocaleString(),
+      calGoal:ct?ct.toLocaleString():'—',
+      calToday:tc.toLocaleString()+' kcal',
+      calFood:fc.toLocaleString()+' kcal',
+      calDrink:dc.toLocaleString()+' kcal'
+    };
+    Object.keys(ids).forEach(function(id){var el=D(id);if(el)el.textContent=ids[id];});
+    var wb=D('waterHeroBar');if(wb)wb.style.width=(wt?Math.min(100,wc/wt*100):0)+'%';
+    var wr=D('waterRemain');if(wr)wr.textContent=wc>=wt?'已達成目標':'剩餘 '+Math.max(0,wt-wc).toLocaleString()+' mL';
+    var cb=D('calHeroBar');if(cb)cb.style.width=(ct?Math.min(100,tc/ct*100):0)+'%';
+    var cr=D('calRemain');if(cr)cr.textContent=ct?Math.max(0,ct-tc).toLocaleString():'—';
+    var rate=D('calRate');if(rate)rate.textContent=(ct?Math.round(tc/ct*100):0)+'%';
+    var cf=D('calProgressFill');if(cf)cf.style.width=(ct?Math.min(100,tc/ct*100):0)+'%';
+
+    if(typeof renderV40HealthTrends==='function')renderV40HealthTrends();
+    if(typeof renderCycle==='function')renderCycle();
+  }
+
+  /* 讓既有快速紀錄在儲存後一定同步首頁 */
+  var oldWater=window.waterModal, oldDrink=window.drinkModal, oldFood=window.foodModal, oldBowel=window.bowelModal, oldWeight=window.weightModal, oldFinance=window.financeModal;
+  [oldWater,oldDrink,oldFood,oldBowel,oldWeight,oldFinance].forEach(function(fn){
+    /* 保留原操作函式，不在此包裝，因為其儲存流程會呼叫 saveCurrentDb；本層已接管該函式。 */
+  });
+
+  /* 初次載入：強制使用目前帳戶的獨立資料，不再依賴共用舊 KEY */
+  try{
+    if(typeof getCurrentUserId==='function'){
+      var id=getCurrentUserId();
+      var raw=localStorage.getItem('health_manager_profile_'+id);
+      if(raw){
+        var loaded=normalizeDb(JSON.parse(raw));
+        db=loaded;window.db=loaded;
+      }else{
+        persist();
+      }
+    }
+  }catch(e){console.error('v4.3 initial load',e);}
+
+  var oldSwitch=window.switchUser;
+  window.switchUser=function(id){
+    try{
+      if(typeof saveCurrentDb==='function')saveCurrentDb();
+      setCurrentUserId(id);
+      window.loadUserData(id);
+      renderUserSwitcher();
+      if(typeof loadProfile==='function')loadProfile();
+      if(typeof loadSalary==='function')loadSalary();
+      if(typeof render==='function')render();
+      refreshAll();
+      return true;
+    }catch(e){console.error('v4.3 switchUser',e);return false;}
+  };
+
+  window.renderV43=refreshAll;
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refreshAll);
+  else setTimeout(refreshAll,0);
+
+  /* 在資料變更後的下一個事件循環再刷新一次，兼容既有舊版 render 流程 */
+  document.addEventListener('click',function(){
+    setTimeout(refreshAll,80);
+  });
 })();
 </script>
 
