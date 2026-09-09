@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v4</title>
+<title>健康管家 v3.7</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -1291,7 +1291,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 </section>
 <section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" type="button" id="saveSalaryBtn">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v4.0</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v4.1</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
 
@@ -2757,6 +2757,198 @@ document.addEventListener('change',function(e){
   document.addEventListener('change',function(){
     setTimeout(refresh,180);
   });
+})();
+</script>
+
+
+<style>
+/* ===== v4.1 全按鈕操作修復 ===== */
+.repair-form-title{margin:0 0 12px;font-size:18px;color:#1d3550}
+.repair-form-note{font-size:10px;color:#8793a1;margin-top:5px;line-height:1.6}
+.repair-choice-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:5px}
+.repair-choice-grid button{border:1px solid #dce5ee;background:#fff;border-radius:9px;padding:8px;font-size:11px;font-weight:800}
+.repair-choice-grid button.selected{border-color:#2d83f7;background:#eef6ff;color:#176fcf}
+@media(max-width:500px){.repair-choice-grid{grid-template-columns:1fr}}
+</style>
+
+<script>
+/* ===== v4.1 操作層：補齊快速記錄與側邊欄 ===== */
+(function(){
+  'use strict';
+
+  function D(id){return document.getElementById(id);}
+  function dbRef(){
+    try{return (typeof db!=='undefined' && db && typeof db==='object')?db:null;}catch(e){return null;}
+  }
+  function saveData(){
+    try{
+      if(typeof saveCurrentDb==='function') saveCurrentDb();
+      else{
+        var id=localStorage.getItem('health_manager_current_user')||'user_1';
+        localStorage.setItem('health_manager_profile_'+id,JSON.stringify(dbRef()||{}));
+        localStorage.setItem('health_manager_v122_final',JSON.stringify(dbRef()||{}));
+      }
+    }catch(e){console.error('v4.1 saveData',e);}
+  }
+  function toast2(msg){
+    if(typeof toast==='function'){toast(msg);return;}
+    var t=D('toast');if(t){t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},1800);}
+  }
+  function nowLocal(){
+    var d=new Date(), pad=function(n){return String(n).padStart(2,'0');};
+    return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+  }
+  function closeModal(){
+    var m=D('modal');if(m)m.classList.remove('show');
+  }
+  function openModal(title,body,onSave){
+    var m=D('modal'),box=D('modalBox');if(!m||!box)return;
+    box.innerHTML='';
+    var h=document.createElement('h2');h.className='repair-form-title';h.textContent=title;box.appendChild(h);
+    var bodyDiv=document.createElement('div');bodyDiv.innerHTML=body;box.appendChild(bodyDiv);
+    var actions=document.createElement('div');actions.className='modal-actions';
+    var cancel=document.createElement('button');cancel.type='button';cancel.className='secondary';cancel.textContent='取消';
+    cancel.onclick=closeModal;
+    var save=document.createElement('button');save.type='button';save.className='primary';save.textContent='儲存紀錄';
+    save.onclick=function(){try{if(onSave()!==false)closeModal();}catch(e){console.error(e);toast2('儲存失敗，請檢查輸入資料');}};
+    actions.append(cancel,save);box.appendChild(actions);
+    m.classList.add('show');
+  }
+
+  function input(id,label,type,value,extra){
+    return '<label>'+label+'<input id="'+id+'" type="'+(type||'text')+'" value="'+(value||'')+'" '+(extra||'')+'></label>';
+  }
+
+  window.waterModal=function(){
+    openModal('新增補水',input('rWaterMl','補水量（mL）','number','','min="1" step="50" placeholder="例如 500"')+
+      '<div class="repair-form-note">所有液體攝取可另外記錄於「飲品」。這裡只記錄補水量。</div>',
+      function(){
+        var n=Number(D('rWaterMl')&&D('rWaterMl').value);
+        if(!n||n<1){toast2('請輸入補水量');return false;}
+        var d=dbRef();if(!d)return false;
+        d.water=Array.isArray(d.water)?d.water:[];
+        d.water.push({id:Date.now(),date:nowLocal(),ml:n});
+        saveData();if(typeof render==='function')render();
+        if(typeof renderV40HealthTrends==='function')renderV40HealthTrends();
+        toast2('已新增 '+n.toLocaleString()+' mL 補水');
+      });
+  };
+
+  window.drinkModal=function(){
+    var options='<option value="water">白開水</option><option value="unsweetTea">無糖茶</option><option value="sweetTea">含糖茶</option><option value="coffee">咖啡</option><option value="milk">奶類飲品</option><option value="other">其他</option>';
+    openModal('新增飲品',input('rDrinkName','飲品名稱','text','','placeholder="例如 無糖綠茶"')+
+      '<label>飲品類型<select id="rDrinkType">'+options+'</select></label>'+
+      input('rDrinkMl','液體量（mL）','number','','min="1" placeholder="例如 500"')+
+      input('rDrinkKcal','熱量（kcal）','number','0','min="0" step="1" placeholder="0"'),
+      function(){
+        var ml=Number(D('rDrinkMl')&&D('rDrinkMl').value), kcal=Number(D('rDrinkKcal')&&D('rDrinkKcal').value||0);
+        if(!ml||ml<1){toast2('請輸入飲品容量');return false;}
+        var d=dbRef();if(!d)return false;
+        d.drinks=Array.isArray(d.drinks)?d.drinks:[];
+        d.drinks.push({id:Date.now(),date:nowLocal(),name:(D('rDrinkName')?.value||D('rDrinkType')?.selectedOptions[0]?.text||'飲品'),type:D('rDrinkType')?.value||'other',ml:ml,kcal:kcal});
+        saveData();if(typeof render==='function')render();if(typeof renderV40HealthTrends==='function')renderV40HealthTrends();toast2('飲品紀錄已新增');
+      });
+  };
+
+  window.foodModal=function(){
+    openModal('新增食物',input('rFoodName','食物名稱','text','','placeholder="例如 雞胸肉便當"')+
+      input('rFoodPortion','份量','text','','placeholder="例如 1 份"')+
+      input('rFoodKcal','熱量（kcal）','number','','min="0" step="1" placeholder="例如 550"')+
+      input('rFoodPrice','價格（元，可選）','number','0','min="0" step="1" placeholder="0"')+
+      '<label>備註<textarea id="rFoodNote" placeholder="備註（可選）"></textarea></label>',
+      function(){
+        var name=(D('rFoodName')?.value||'').trim(), kcal=Number(D('rFoodKcal')?.value||0);
+        if(!name){toast2('請輸入食物名稱');return false;}
+        var d=dbRef();if(!d)return false;
+        d.foods=Array.isArray(d.foods)?d.foods:[];
+        d.foods.push({id:Date.now(),date:nowLocal(),name:name,portion:D('rFoodPortion')?.value||'',kcal:kcal,price:Number(D('rFoodPrice')?.value||0),note:D('rFoodNote')?.value||''});
+        saveData();if(typeof render==='function')render();if(typeof renderV40HealthTrends==='function')renderV40HealthTrends();toast2('食物紀錄已新增');
+      });
+  };
+
+  window.bowelModal=function(){
+    var choices=[['1','小石頭型'],['2','結塊型'],['3','裂紋型'],['4','黃金型 ⭐'],['5','軟塊型'],['6','糊狀型'],['7','水狀型']];
+    var grid='<div class="repair-choice-grid">'+choices.map(function(x){return '<button type="button" data-stool="'+x[0]+'">'+x[0]+' '+x[1]+'</button>';}).join('')+'</div>';
+    openModal('新增排便', '<label>型態'+grid+'</label>'+
+      '<label>量<select id="rBowelQty"><option>少量</option><option selected>中等量</option><option>大量</option></select></label>'+
+      '<label>是否用力<select id="rBowelStrain"><option value="no">否</option><option value="yes">是</option></select></label>'+
+      '<label>是否有排不乾淨感<select id="rBowelIncomplete"><option value="no">否</option><option value="yes">是</option></select></label>'+
+      '<label>腹脹<select id="rBowelBloat"><option value="no">否</option><option value="yes">是</option></select></label>',
+      function(){
+        var chosen=document.querySelector('#modalBox [data-stool].selected');
+        if(!chosen){toast2('請選擇排便型態');return false;}
+        var d=dbRef();if(!d)return false;
+        d.bowel=Array.isArray(d.bowel)?d.bowel:[];
+        d.bowel.push({id:Date.now(),date:nowLocal(),type:Number(chosen.dataset.stool),quantity:D('rBowelQty')?.value||'中等量',straining:D('rBowelStrain')?.value==='yes',incomplete:D('rBowelIncomplete')?.value==='yes',bloating:D('rBowelBloat')?.value==='yes'});
+        saveData();if(typeof render==='function')render();if(typeof renderV40HealthTrends==='function')renderV40HealthTrends();toast2('排便紀錄已新增');
+      });
+    document.querySelectorAll('#modalBox [data-stool]').forEach(function(b){b.onclick=function(){document.querySelectorAll('#modalBox [data-stool]').forEach(function(x){x.classList.remove('selected')});b.classList.add('selected');};});
+  };
+
+  window.weightModal=function(){
+    var p=dbRef()?.profile||{};
+    openModal('新增體重',input('rWeight','體重（kg）','number',p.weight||'','min="1" step=".1" placeholder="例如 65.5"')+
+      '<label>備註<textarea id="rWeightNote" placeholder="備註（可選）"></textarea></label>',
+      function(){
+        var n=Number(D('rWeight')?.value);
+        if(!n||n<1){toast2('請輸入體重');return false;}
+        var d=dbRef();if(!d)return false;
+        d.weights=Array.isArray(d.weights)?d.weights:[];
+        d.weights.push({id:Date.now(),date:nowLocal(),weight:n,note:D('rWeightNote')?.value||''});
+        d.profile=d.profile||{};d.profile.weight=n;
+        saveData();if(typeof render==='function')render();if(typeof loadProfile==='function')loadProfile();if(typeof renderV40HealthTrends==='function')renderV40HealthTrends();toast2('體重紀錄已新增');
+      });
+  };
+
+  window.financeModal=function(type){
+    var isIn=type==='income';
+    var cats=isIn?['薪資','獎金','其他收入']:['飲食','刷卡','交通','家庭生活費','娛樂','投資','醫療','生活日用品','其他'];
+    var opts=cats.map(function(c){return '<option>'+c+'</option>';}).join('');
+    openModal(isIn?'新增收入':'新增支出',input('rFinName','項目名稱','text','','placeholder="例如 '+(isIn?'本月薪資':'午餐')+'"')+
+      '<label>分類<select id="rFinCat">'+opts+'</select></label>'+
+      input('rFinAmount','金額（元）','number','','min="0" step="1" placeholder="例如 1000"')+
+      '<label>日期<input id="rFinDate" type="date" value="'+nowLocal().slice(0,10)+'"></label>'+
+      '<label>備註<textarea id="rFinNote"></textarea></label>',
+      function(){
+        var n=Number(D('rFinAmount')?.value), name=(D('rFinName')?.value||'').trim();
+        if(!n||n<0||!name){toast2('請填寫項目名稱與金額');return false;}
+        var d=dbRef();if(!d)return false;
+        d.finance=Array.isArray(d.finance)?d.finance:[];
+        d.income=Array.isArray(d.income)?d.income:[];
+        d.expense=Array.isArray(d.expense)?d.expense:[];
+        var rec={id:Date.now(),type:type,name:name,category:D('rFinCat')?.value||'',amount:n,date:D('rFinDate')?.value||nowLocal().slice(0,10),note:D('rFinNote')?.value||''};
+        d.finance.push(rec);(isIn?d.income:d.expense).push(rec);
+        saveData();if(typeof render==='function')render();toast2((isIn?'收入':'支出')+'紀錄已新增');
+      });
+  };
+
+  function bindNav(){
+    document.querySelectorAll('.nav[data-page]').forEach(function(n){
+      if(n.__v41)return;n.__v41=true;
+      n.addEventListener('click',function(e){
+        e.preventDefault();e.stopPropagation();
+        if(typeof window.showPage==='function')window.showPage(n.getAttribute('data-page'));
+      });
+    });
+    var cu=document.querySelector('.sidebar-current-user');
+    if(cu&&!cu.__v41){cu.__v41=true;cu.onclick=function(){if(window.showPage)window.showPage('profile');};}
+  }
+
+  function bindModalClose(){
+    var m=D('modal');
+    if(m&&!m.__v41){
+      m.__v41=true;
+      m.addEventListener('click',function(e){if(e.target===m)closeModal();});
+    }
+  }
+
+  function boot(){
+    bindNav();bindModalClose();
+    if(typeof window.showPage==='function')window.showPage(document.querySelector('.page.active')?.id||'dashboard');
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);
+  else boot();
 })();
 </script>
 
