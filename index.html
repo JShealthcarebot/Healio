@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v3.5</title>
+<title>健康管家 v3.6</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -1684,35 +1684,11 @@ document.addEventListener('change',function(e){
 
 <script>
 (function(){
-  function bind(id,event,fn){
-    var el=document.getElementById(id);
-    if(!el)return;
-    el.addEventListener(event,function(e){
-      try{e.preventDefault();fn(e);}catch(err){console.error('操作失敗 '+id,err);}
-    });
-  }
-  function boot(){
-    try{
-      if(typeof ensureUserIndex==='function') ensureUserIndex();
-      var uid=typeof getCurrentUserId==='function'?getCurrentUserId():'';
-      if(uid && typeof loadUserData==='function') loadUserData(uid);
-      if(typeof renderUserSwitcher==='function') renderUserSwitcher();
-
-      document.querySelectorAll('.nav[data-page]').forEach(function(el){
-        el.addEventListener('click',function(e){
-          e.preventDefault();
-          if(typeof showPage==='function') showPage(el.dataset.page);
-        });
-      });
-      bind('userSelect','change',function(e){if(typeof switchUser==='function')switchUser(e.target.value);});
-      bind('addUserBtn','click',function(){if(typeof openNewUserDialog==='function')openNewUserDialog();});
-      bind('confirmNewUser','click',function(){if(typeof createUser==='function')createUser();});
-      bind('saveSalaryBtn','click',function(){if(typeof saveSalary==='function')saveSalary();});
-      if(typeof showPage==='function')showPage('home');
-    }catch(err){console.error('初始化錯誤',err);}
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
-  else boot();
+  'use strict';
+  window.showPage=function(id){var t=document.getElementById(id);if(!t)return false;document.querySelectorAll('.page').forEach(function(p){p.classList.toggle('active',p===t)});document.querySelectorAll('.nav[data-page]').forEach(function(n){n.classList.toggle('active',n.getAttribute('data-page')===id)});if(id==='salary'){var i=document.getElementById('salaryInput');if(i&&!i.value)i.value=localStorage.getItem('health_manager_salary_day')||'5'}window.scrollTo(0,0);return true};
+  function bind(){document.querySelectorAll('.nav[data-page]').forEach(function(n){if(n.__v36)return;n.__v36=1;n.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();window.showPage(n.dataset.page)})});var u=document.querySelector('.sidebar-current-user');if(u&&!u.__v36){u.__v36=1;u.addEventListener('click',function(){window.showPage('profile')})}}
+  function boot(){bind();if(!document.querySelector('.page.active'))window.showPage('dashboard')}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
 </script>
 </body></html>
