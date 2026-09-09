@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v4.12</title>
+<title>健康管家 v4.14</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -1002,6 +1002,13 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 }
 </style>
 
+<style>
+/* v4.14：首頁已提供財務快速記錄，移除首頁下方重複財務記帳區塊 */
+#dashboard .finance-summary,
+#dashboard .finance-overview,
+#dashboard .dashboard-finance,
+#dashboard [data-section="finance"]{display:none!important}
+</style>
 </head>
 <body>
 <div class="app">
@@ -1331,7 +1338,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 
 <section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" type="button" id="saveSalaryBtn">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v4.12</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v4.14</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
 
@@ -4601,6 +4608,167 @@ document.addEventListener('change',function(e){
   else boot();
 
   window.refreshAnalysisPages=refresh;
+})();
+</script>
+
+
+<style>
+/* ===== v4.13 數據分析頁獨立資料讀取與完整重建 ===== */
+.v413-page{display:block}
+.v413-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
+.v413-kpi{padding:18px;border:1px solid #e1e9f0;border-radius:16px;background:#fff}
+.v413-kpi .t{font-size:13px;font-weight:800;color:#607488}
+.v413-kpi .v{font-size:28px;font-weight:900;color:#17334e;margin-top:12px}
+.v413-kpi .s{font-size:11px;color:#8794a0;margin-top:5px}
+.v413-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.v413-card{border:1px solid #e1e9f0;border-radius:16px;background:#fff;padding:18px}
+.v413-card h3{margin:0 0 4px;font-size:18px}
+.v413-card p{margin:0;color:#81909d;font-size:11px}
+.v413-chart{height:300px;margin-top:12px}
+.v413-chart svg{width:100%;height:100%;display:block}
+.v413-progress{height:12px;background:#edf2f6;border-radius:99px;overflow:hidden;margin:14px 0}
+.v413-progress i{display:block;height:100%;background:#e28a3b;border-radius:99px}
+.v413-statline{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.v413-statline div{background:#f6f9fc;border-radius:10px;padding:11px}
+.v413-statline span{display:block;font-size:10px;color:#7d8b98}
+.v413-statline b{display:block;margin-top:5px;font-size:16px;color:#20384f}
+.v413-note{margin-top:12px;padding:11px 13px;border-radius:10px;background:#f6f9fc;color:#5e7182;font-size:11px;line-height:1.7}
+.v413-list{margin-top:14px}
+.v413-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #edf1f4;font-size:12px}
+.v413-row:last-child{border-bottom:0}
+.v413-empty{padding:28px;text-align:center;color:#96a2ad;font-size:12px}
+@media(max-width:900px){.v413-kpis{grid-template-columns:repeat(2,1fr)}.v413-grid{grid-template-columns:1fr}}
+@media(max-width:520px){.v413-kpis{grid-template-columns:1fr}.v413-statline{grid-template-columns:1fr}}
+</style>
+<script>
+/* ===== v4.13：直接從目前使用者 localStorage 讀取，完全繞過舊分析渲染 ===== */
+(function(){
+  'use strict';
+  var lastSig='';
+  function E(id){return document.getElementById(id);}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function uid(){
+    return localStorage.getItem('health_manager_current_user') ||
+      localStorage.getItem('health_manager_current_user_id') || 'user_1';
+  }
+  function load(){
+    var id=uid(),raw=localStorage.getItem('health_manager_profile_'+id),d=null;
+    try{d=raw?JSON.parse(raw):null;}catch(e){}
+    if(!d){
+      try{d=JSON.parse(localStorage.getItem('health_manager_v122_final')||'null');}catch(e){}
+    }
+    d=d&&typeof d==='object'?d:{};
+    ['water','drinks','foods','bowel','weights','finance','income','expense'].forEach(function(k){if(!Array.isArray(d[k]))d[k]=[];});
+    d.profile=d.profile||{};
+    return d;
+  }
+  function key(v){
+    var s=String(v||''),m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(m)return m[1]+'-'+m[2]+'-'+m[3];
+    var d=new Date(v);if(isNaN(d))return '';
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function dateOf(x){return x&&(x.date||x.datetime||x.time||x.createdAt||x.timestamp);}
+  function n(x,ks){for(var i=0;i<ks.length;i++){var v=Number(x&&x[ks[i]]);if(Number.isFinite(v))return v;}return 0;}
+  function days(){
+    var t=new Date();t.setHours(0,0,0,0);var a=[];
+    for(var i=6;i>=0;i--){var d=new Date(t);d.setDate(t.getDate()-i);a.push({k:key(d),l:(d.getMonth()+1)+'/'+d.getDate()});}
+    return a;
+  }
+  function series(d,type){
+    var ds=days(),a=ds.map(function(x){return {k:x.k,l:x.l,v:0};});
+    function add(arr,ks){arr.forEach(function(x){var r=a.find(function(z){return z.k===key(dateOf(x));});if(r)r.v+=n(x,ks);});}
+    if(type==='water'){add(d.water,['ml','amount','value','volume']);add(d.drinks,['ml','amount','value','volume']);}
+    if(type==='cal'){add(d.foods,['kcal','calories']);add(d.drinks,['kcal','calories']);}
+    if(type==='bowel')d.bowel.forEach(function(x){var r=a.find(function(z){return z.k===key(dateOf(x));});if(r)r.v++;});
+    if(type==='weight'){
+      var latest={};
+      d.weights.forEach(function(x){var k=key(dateOf(x)),v=n(x,['weight','kg','value']);if(k&&v)latest[k]=v;});
+      a.forEach(function(r){if(latest[r.k])r.v=latest[r.k];});
+    }
+    return a;
+  }
+  function targets(d){
+    var p=d.profile||{},w=Number(p.weight)||0,h=Number(p.height)||0,a=Number(p.age)||0;
+    var water=Math.max(1500,Math.round(w*32/50)*50),cal=0;
+    if(w&&h&&a){
+      var b=p.sex==='male'?10*w+6.25*h-5*a+5:p.sex==='female'?10*w+6.25*h-5*a-161:10*w+6.25*h-5*a-78;
+      cal=Math.max(0,Math.round(b*({sedentary:1.2,normal:1.375,active:1.55}[p.activity]||1.375)/50)*50);
+    }
+    return {water:water,cal:cal};
+  }
+  function chart(data,type,goal){
+    var W=900,H=300,L=58,R=25,T=22,B=42,PW=W-L-R,PH=H-T-B;
+    var vals=data.map(function(x){return x.v;}).filter(function(x){return x>0;}),max=Math.max.apply(null,vals.concat([1]));
+    if(goal)max=Math.max(max,goal);
+    if(type==='water')max=Math.max(max,1500);
+    if(type==='cal')max=Math.max(max,Math.ceil(max/500)*500);
+    if(type==='weight')max=Math.max(max,Math.ceil(max/5)*5||5);
+    if(type==='bowel')max=Math.max(max,4);
+    var color=type==='water'?'#2f82dc':type==='cal'?'#e28a3b':type==='weight'?'#2db77d':'#7957c9';
+    var s='<svg viewBox="0 0 '+W+' '+H+'">';
+    for(var i=0;i<=4;i++){var y=T+PH-i*PH/4;s+='<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="#e4ebf1"/><text x="'+(L-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="10" fill="#82909d">'+Math.round(max*i/4).toLocaleString()+'</text>';}
+    if(goal){var gy=T+PH-goal/max*PH;s+='<line x1="'+L+'" y1="'+gy+'" x2="'+(W-R)+'" y2="'+gy+'" stroke="#8a98a5" stroke-width="2" stroke-dasharray="8 5"/><text x="'+(W-R)+'" y="'+Math.max(14,gy-7)+'" text-anchor="end" font-size="11" fill="#687887">每日目標 '+goal.toLocaleString()+'</text>';}
+    if(type==='weight'){
+      var pts=data.map(function(r,i){return {x:L+PW*i/6,y:T+PH-r.v/max*PH,r:r};}).filter(function(p){return p.r.v>0;});
+      if(pts.length){s+='<polyline points="'+pts.map(function(p){return p.x+','+p.y;}).join(' ')+'" fill="none" stroke="'+color+'" stroke-width="4" stroke-linecap="round"/>';pts.forEach(function(p){s+='<circle cx="'+p.x+'" cy="'+p.y+'" r="5" fill="'+color+'"/><text x="'+p.x+'" y="'+Math.max(15,p.y-11)+'" text-anchor="middle" font-size="11" font-weight="900" fill="#30475d">'+p.r.v.toFixed(1)+'</text>';});}
+    }else{
+      data.forEach(function(r,i){var x=L+PW*i/6,bh=r.v?PH*r.v/max:0;if(bh)s+='<rect x="'+(x-27)+'" y="'+(T+PH-bh)+'" width="54" height="'+bh+'" rx="6" fill="'+color+'" opacity=".82"/>';if(r.v)s+='<text x="'+x+'" y="'+Math.max(15,T+PH-bh-8)+'" text-anchor="middle" font-size="11" font-weight="900" fill="#30475d">'+Math.round(r.v).toLocaleString()+'</text>';});
+    }
+    data.forEach(function(r,i){var x=L+PW*i/6;s+='<text x="'+x+'" y="'+(H-12)+'" text-anchor="middle" font-size="10" fill="#778695">'+r.l+'</text>';});
+    return s+'</svg>';
+  }
+  function renderTrends(){
+    var sec=E('trends');if(!sec)return;
+    var d=load(),w=series(d,'water'),c=series(d,'cal'),wt=series(d,'weight'),b=series(d,'bowel'),g=targets(d);
+    var avgW=Math.round(w.reduce(function(a,x){return a+x.v;},0)/7),avgC=Math.round(c.reduce(function(a,x){return a+x.v;},0)/7),bt=b.reduce(function(a,x){return a+x.v;},0);
+    var valid=wt.filter(function(x){return x.v>0;}),chg=valid.length>=2?valid[valid.length-1].v-valid[0].v:null;
+    var chartBox=sec.querySelector('.health-trend-chart-box');
+    if(chartBox)chartBox.innerHTML='<div class="v413-chart">'+chart(w,'water',g.water)+'</div>';
+    var ids={trendWaterAvg:avgW.toLocaleString(),trendCalAvg:avgC.toLocaleString(),trendBowelCount:bt,trendWeightChange:chg===null?'—':(chg>0?'+':'')+chg.toFixed(1)+' kg'};
+    Object.keys(ids).forEach(function(id){var e=E(id);if(e)e.textContent=ids[id];});
+    var analysis=E('healthAnalysisText');
+    if(analysis)analysis.innerHTML='近 7 天平均補水 <b>'+avgW.toLocaleString()+' mL</b>；平均熱量 <b>'+avgC.toLocaleString()+' kcal</b>；排便共 <b>'+bt+' 次</b>。目前每日補水目標為 <b>'+g.water.toLocaleString()+' mL</b>。';
+  }
+  function renderCalories(){
+    var sec=E('calories');if(!sec)return;
+    var d=load(),c=series(d,'cal'),g=targets(d),today=key(new Date()),food=0,drink=0;
+    d.foods.forEach(function(x){if(key(dateOf(x))===today)food+=n(x,['kcal','calories']);});
+    d.drinks.forEach(function(x){if(key(dateOf(x))===today)drink+=n(x,['kcal','calories']);});
+    var total=food+drink,rate=g.cal?Math.round(total/g.cal*100):0;
+    var ids={calToday:total.toLocaleString()+' kcal',calGoal:g.cal?g.cal.toLocaleString():'—',calRemain:g.cal?Math.max(0,g.cal-total).toLocaleString():'—',calFood:food.toLocaleString()+' kcal',calDrink:drink.toLocaleString()+' kcal',calRate:rate+'%'};
+    Object.keys(ids).forEach(function(id){var e=E(id);if(e)e.textContent=ids[id];});
+    var fill=E('calProgressFill');if(fill)fill.style.width=Math.min(100,rate)+'%';
+    var box=E('calorieTrendChart');
+    if(box&&box.parentElement)box.parentElement.innerHTML='<div class="v413-chart">'+chart(c,'cal',g.cal)+'</div>';
+    var list=E('calorieRecordList');
+    if(list){
+      var rows=[];
+      d.foods.forEach(function(x){if(key(dateOf(x))===today)rows.push('<div class="v413-row"><span>🍴 '+esc(x.name||'食物')+'</span><b>'+n(x,['kcal','calories']).toLocaleString()+' kcal</b></div>');});
+      d.drinks.forEach(function(x){if(key(dateOf(x))===today)rows.push('<div class="v413-row"><span>🥤 '+esc(x.name||'飲品')+'</span><b>'+n(x,['kcal','calories']).toLocaleString()+' kcal</b></div>');});
+      list.innerHTML=rows.length?'<div class="v413-list">'+rows.join('')+'</div>':'<div class="v413-empty">今日尚無熱量紀錄</div>';
+    }
+    var txt=E('calorieAnalysisText');if(txt)txt.innerHTML=g.cal?'今日攝取 <b>'+total.toLocaleString()+' kcal</b>，約為每日參考的 <b>'+rate+'%</b>。':'請先完成基本資料，以計算個人化熱量參考值。';
+  }
+  function active(){
+    var p=document.querySelector('.page.active');return p?p.id:'';
+  }
+  function render(){
+    if(active()==='trends')renderTrends();
+    if(active()==='calories')renderCalories();
+  }
+  function sig(){
+    var d=load();
+    return [uid(),d.water.length,d.drinks.length,d.foods.length,d.bowel.length,d.weights.length,JSON.stringify(d.profile||{})].join('|');
+  }
+  function boot(){
+    render();
+    [150,400,900].forEach(function(ms){setTimeout(render,ms);});
+  }
+  document.addEventListener('click',function(){setTimeout(render,100);setTimeout(render,500);setTimeout(render,1200);},true);
+  document.addEventListener('change',function(){setTimeout(render,150);},true);
+  setInterval(function(){var s=sig();if(s!==lastSig){lastSig=s;render();}},500);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
 </script>
 
