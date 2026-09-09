@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v4.5</title>
+<title>健康管家 v4.6</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -1331,7 +1331,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 
 <section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" type="button" id="saveSalaryBtn">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v4.5</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v4.6</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
 
@@ -3555,6 +3555,159 @@ document.addEventListener('change',function(e){
   }
   window.goToDrinkRecords=function(){go('drinks');};
   window.goToFoodRecords=function(){go('foods');};
+})();
+</script>
+
+
+<style>
+/* ===== v4.6 個人化目標最終同步 ===== */
+.target-source-note{margin-top:8px;font-size:10px;color:#6e7f91}
+</style>
+<script>
+/* ===== v4.6：確保首頁目標永遠來自目前使用者的基本資料 ===== */
+(function(){
+  'use strict';
+
+  function E(id){return document.getElementById(id);}
+  function getDB(){
+    try{return (typeof db!=='undefined' && db && typeof db==='object')?db:null;}catch(e){return null;}
+  }
+  function num(v){var x=Number(v);return Number.isFinite(x)?x:0;}
+  function round50(v){return Math.round(v/50)*50;}
+  function today(){
+    var d=new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function recordDay(x){
+    var s=String((x&&x.date)||'').slice(0,10);
+    if(/^\\d{4}-\\d{2}-\\d{2}$/.test(s))return s;
+    var d=new Date((x&&x.date)||x&&x.time||0);
+    if(isNaN(d))return '';
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+
+  function profile(){
+    var d=getDB();
+    return d&&d.profile&&typeof d.profile==='object'?d.profile:{};
+  }
+
+  function waterGoal(){
+    var p=profile();
+    var w=num(p.weight);
+    /* 若基本資料體重尚未寫入，使用最近一次體重紀錄作為暫時個人化依據 */
+    if(!w){
+      var d=getDB(), arr=d&&Array.isArray(d.weights)?d.weights:[];
+      arr.slice().sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});
+      if(arr.length)w=num(arr[arr.length-1].weight||arr[arr.length-1].kg||arr[arr.length-1].value);
+    }
+    return Math.max(1500,round50((w||0)*32));
+  }
+
+  function calorieGoal(){
+    var p=profile(),w=num(p.weight),h=num(p.height),a=num(p.age);
+    if(!w||!h||!a)return 0;
+    var bmr;
+    if(p.sex==='male')bmr=10*w+6.25*h-5*a+5;
+    else if(p.sex==='female')bmr=10*w+6.25*h-5*a-161;
+    else bmr=10*w+6.25*h-5*a-78;
+    var factor={sedentary:1.2,normal:1.375,active:1.55}[p.activity]||1.375;
+    return Math.max(0,round50(bmr*factor));
+  }
+
+  function todayWater(){
+    var d=getDB(),t=today(),s=0;
+    (d&&Array.isArray(d.water)?d.water:[]).forEach(function(x){
+      if(recordDay(x)===t)s+=num(x.ml||x.amount||x.value||x.volume);
+    });
+    (d&&Array.isArray(d.drinks)?d.drinks:[]).forEach(function(x){
+      if(recordDay(x)===t)s+=num(x.ml||x.amount||x.value||x.volume);
+    });
+    return s;
+  }
+
+  function todayCalories(){
+    var d=getDB(),t=today(),s=0;
+    (d&&Array.isArray(d.foods)?d.foods:[]).forEach(function(x){
+      if(recordDay(x)===t)s+=num(x.kcal||x.calories);
+    });
+    (d&&Array.isArray(d.drinks)?d.drinks:[]).forEach(function(x){
+      if(recordDay(x)===t)s+=num(x.kcal||x.calories);
+    });
+    return s;
+  }
+
+  function refresh(){
+    var d=getDB();if(!d)return;
+    var wg=waterGoal(),cg=calorieGoal(),wv=todayWater(),cv=todayCalories();
+
+    if(E('waterHeroGoal'))E('waterHeroGoal').textContent=wg.toLocaleString();
+    if(E('waterHero'))E('waterHero').textContent=wv.toLocaleString();
+    if(E('waterHeroBar'))E('waterHeroBar').style.width=(wg?Math.min(100,wv/wg*100):0)+'%';
+    if(E('waterRemain'))E('waterRemain').textContent=wv>=wg?'已達成目標':'剩餘 '+Math.max(0,wg-wv).toLocaleString()+' mL';
+
+    if(E('calHeroGoal'))E('calHeroGoal').textContent=cg?cg.toLocaleString():'—';
+    if(E('calHero'))E('calHero').textContent=cv.toLocaleString();
+    if(E('calHeroBar'))E('calHeroBar').style.width=(cg?Math.min(100,cv/cg*100):0)+'%';
+    if(E('calRemain'))E('calRemain').textContent=cg?Math.max(0,cg-cv).toLocaleString():'—';
+
+    /* 其他熱量頁面若有目標欄位，也一併同步 */
+    ['calGoal','calorieGoal','dailyCalorieTarget'].forEach(function(id){
+      var el=E(id);if(el)el.textContent=cg?cg.toLocaleString():'—';
+    });
+
+    /* 基本資料預覽 */
+    var p=profile(),preview=E('profilePreview');
+    if(preview && num(p.height)&&num(p.weight)&&num(p.age)){
+      var bmi=num(p.weight)/Math.pow(num(p.height)/100,2);
+      preview.textContent='BMI 約 '+bmi.toFixed(1)+'　｜　補水目標 '+wg.toLocaleString()+' mL／日　｜　每日熱量參考 '+(cg?cg.toLocaleString()+' kcal':'—');
+    }
+  }
+
+  /* 儲存基本資料後，直接以目前 db 重算，不依賴舊版 render 的固定數值 */
+  var oldSaveProfile=window.saveProfile;
+  window.saveProfile=function(){
+    var result=false;
+    if(typeof oldSaveProfile==='function'){
+      try{result=oldSaveProfile.apply(this,arguments);}catch(e){console.error('v4.6 saveProfile',e);}
+    }
+    setTimeout(refresh,0);
+    setTimeout(refresh,100);
+    return result;
+  };
+
+  /* 任何頁面重新 render 後再補一次個人化目標，避免舊版 render 覆蓋 */
+  var oldRender=window.render;
+  if(typeof oldRender==='function' && !oldRender.__v46){
+    var wrapped=function(){
+      var r=oldRender.apply(this,arguments);
+      setTimeout(refresh,0);
+      return r;
+    };
+    wrapped.__v46=true;
+    window.render=wrapped;
+  }
+
+  /* 使用者切換後補算 */
+  var oldSwitch=window.switchUser;
+  if(typeof oldSwitch==='function' && !oldSwitch.__v46){
+    var sw=function(id){
+      var r=oldSwitch.apply(this,arguments);
+      setTimeout(refresh,0);
+      setTimeout(refresh,120);
+      return r;
+    };
+    sw.__v46=true;
+    window.switchUser=sw;
+  }
+
+  window.refreshPersonalTargets=refresh;
+
+  function init(){
+    /* 等待既有的使用者載入／loadProfile／render 流程完成後再計算 */
+    [0,50,150,400].forEach(function(ms){setTimeout(refresh,ms);});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
+  else init();
 })();
 </script>
 
