@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v4.3</title>
+<title>健康管家 v3.7</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -1025,112 +1025,6 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 </aside>
 
 <main class="main">
-<section id="dashboard" class="page active">
-<div class="top"><div class="greeting">早安！健康管家陪你一起記錄每一天 💪</div><div><span class="current-user-top" id="topCurrentUser">👤 使用者 1</span><span class="date" id="todayText"></span></div></div>
-<div class="section-title">快速記錄</div><div class="quick">
-<button class="qwater" onclick="waterModal()"><span class="qicon">💧</span><span class="qname">補水</span><span class="qsub">自訂輸入 mL</span></button>
-<button class="qdrink" onclick="drinkModal()"><span class="qicon">🥤</span><span class="qname">飲品</span><span class="qsub">記錄飲品</span></button>
-<button class="qfood" onclick="foodModal()"><span class="qicon">🍴</span><span class="qname">食物</span><span class="qsub">記錄食物</span></button>
-<button class="qbowel" onclick="bowelModal()"><span class="qicon">🚽</span><span class="qname">排便</span><span class="qsub">記錄排便</span></button><button class="qweight" onclick="weightModal()"><span class="qicon">＋</span><span class="qname">體重</span><span class="qsub">新增今日體重</span></button>
-<button class="qincome" onclick="financeModal('income')"><span class="qicon">💵</span><span class="qname">收入</span><span class="qsub">記錄收入</span></button>
-<button class="qexpense" onclick="financeModal('expense')"><span class="qicon">🧾</span><span class="qname">支出</span><span class="qsub">記錄支出</span></button>
-</div>
-
-<div class="section-title">今日其他健康概況</div>
-<div class="other-health-card">
-  <div class="other-health-head">
-    <div>
-      <div class="other-health-icon">♡</div>
-      <div>
-        <p>記錄身體狀況，掌握每日健康變化</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="other-health-main">
-    <div class="other-health-panel bowel-panel">
-      <div class="other-panel-icon">🚽</div>
-      <div class="other-panel-content">
-        <div class="bowel-title-row"><h4>排便次數</h4><button type="button" class="mini-add-bowel" onclick="bowelModal()">＋</button></div>
-        <div class="other-panel-value"><b id="bowelCount">0</b><span>次</span></div>
-        <div class="other-status" id="bowelStatus">尚無紀錄</div>
-      </div>
-      <div class="other-panel-details">
-        <div><span>📅 最近一次</span><b id="bowelDate">--/--/--</b></div>
-        <div><span>◷ 時間</span><b id="bowelTime">--:--</b></div>
-        <div><span>▣ 型態</span><b id="bowelTypeMini">--</b></div>
-        <div><span>量</span><b id="bowelQtyMini">--</b></div>
-      </div>
-    </div>
-
-    <div class="other-health-divider"></div>
-
-    <div class="other-health-panel weight-panel">
-      <div class="other-panel-icon">⚖️</div>
-      <div class="other-panel-content">
-        <div class="weight-title-row"><h4>今日體重</h4><button type="button" class="mini-add-weight" onclick="weightModal()" title="新增今日體重" aria-label="新增今日體重">＋</button></div>
-        <div class="other-panel-value"><b id="weightNow">--</b><span>kg</span></div>
-        <div class="other-status weight-status">尚無紀錄</div>
-      </div>
-      <div class="other-panel-details">
-        <div><span>↗ 變化</span><b id="weightChangeToday">-- kg</b></div>
-        <div><span>📅 最後記錄</span><b id="weightDate">--/--/--</b></div>
-        <div><span>◷ 時間</span><b id="weightTime">--:--</b></div>
-        <div><span>▣ 紀錄</span><b>最後一次</b></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="other-health-tip">
-    <span>💡</span>
-    <b>小提醒：</b> 持續記錄有助於觀察身體變化，讓健康管理更有效！
-  </div>
-</div>
-
-<div class="section-title">今日補水進度</div><div class="two">
-<div class="card health-big"><h3>今日補水進度</h3><div class="hero-num"><span id="waterHero">0</span> <span>/ <span id="waterHeroGoal">2,000</span> mL</span></div><div class="bar-lg"><i id="waterHeroBar"></i></div><b id="waterRemain">剩餘 2,000 mL</b><div class="tip">💧 小提醒：可依實際需求分次補充液體。</div></div>
-<div class="card health-big orange"><h3>今日熱量進度</h3><div class="hero-num"><span id="calHero">0</span> <span>/ <span id="calHeroGoal">2,000</span> kcal</span></div><div class="bar-lg orange"><i id="calHeroBar"></i></div><div class="tip">🔥 剩餘 <span id="calRemain">2,000</span> kcal</div></div>
-</div>
-
-<div class="section-title">飲品／食物紀錄</div><div class="records">
-<div class="card list-card"><h3>🥤 今日飲品紀錄 <span style="float:right;color:#2879dc;cursor:pointer">查看全部 ›</span></h3><div id="todayDrinkList"></div><button class="outline" onclick="drinkModal()">＋ 新增飲品</button></div>
-<div class="card list-card"><h3>🍴 今日食物紀錄 <span style="float:right;color:#2879dc;cursor:pointer">查看全部 ›</span></h3><div id="todayFoodList"></div><button class="outline" onclick="foodModal()">＋ 新增食物</button></div>
-</div>
-
-<div class="section-title">7 日健康趨勢</div><div class="charts">
-<div class="card chart"><h4>補水趨勢（mL）</h4><div class="chartarea" id="waterChart"></div><div class="chartlabels"><span>6 天前</span><span>今天</span></div></div>
-<div class="card chart"><h4>熱量趨勢（kcal）</h4><div class="chartarea orange" id="calChart"></div><div class="chartlabels"><span>6 天前</span><span>今天</span></div></div>
-<div class="card chart"><h4>體重趨勢（kg）</h4><div class="chartarea green" id="weightChart"></div><div class="chartlabels"><span>6 天前</span><span>今天</span></div></div>
-<div class="card chart"><h4>排便次數趨勢（次）</h4><div class="chartarea purple" id="bowelChart"></div><div class="chartlabels"><span>6 天前</span><span>今天</span></div></div>
-</div>
-
-<div class="section-title">財務記帳</div><div class="finance finance-compact">
-<div class="finance-title">本期財務總覽 <span class="finance-period-inline">（<span id="financePeriod"></span>）</span></div>
-<div class="money3">
-<div class="moneybox"><span class="income">收入</span><b class="income" id="finIncome">$0</b></div>
-<div class="moneybox"><span class="expense">支出</span><b class="expense" id="finExpense">$0</b></div>
-<div class="moneybox"><span>結餘</span><b class="balance" id="finBalance">$0</b></div>
-</div>
-<div class="finance-actions">
-<button class="outline" onclick="financeModal('income')">＋ 新增收入</button>
-<button class="outline expense-btn" onclick="financeModal('expense')">＋ 新增支出</button>
-</div>
-
-
-<details class="finance-details">
-<summary>📊 財務統計與趨勢</summary>
-<div class="finance-analytics">
-<div class="finance-chart-card"><div class="chart-head"><b>每日收支曲線</b><span>本期</span></div><canvas id="financeTrendChart"></canvas></div>
-<div class="finance-chart-card"><div class="chart-head"><b>支出分類統計</b><span>本期</span></div><canvas id="financeCategoryChart"></canvas></div>
-<div class="finance-chart-card"><div class="chart-head"><b>本期財務摘要</b></div><div id="financeStats"></div></div>
-</div>
-</details>
-
-<div class="finance-cycle">發薪日：每月 <span id="salaryDayLabel">5</span> 日　｜　週期：<span id="financePeriod2"></span> <button class="secondary">設定</button></div>
-<div class="finance-hidden-data" aria-hidden="true"><div id="finIncomeList"></div><div id="finCats"></div><div id="finExpenseList"></div></div>
-</div>
-</section>
-
 <section id="water" class="page"><div class="page-head"><h2>補水紀錄</h2><button class="primary" onclick="waterModal()">＋ 自訂補水</button></div><div class="card"><div id="waterTable"></div></div></section>
 <section id="drink" class="page"><div class="page-head"><h2>飲品紀錄</h2><button class="primary" onclick="drinkModal()">＋ 新增飲品</button></div><div class="card"><div id="drinkTable"></div></div></section>
 <section id="food" class="page"><div class="page-head"><h2>食物紀錄</h2><button class="primary" onclick="foodModal()">＋ 新增食物</button></div><div class="card"><div id="foodTable"></div></div></section>
@@ -1336,7 +1230,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 
 <section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" type="button" id="saveSalaryBtn">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v4.3</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v4.5</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
 
@@ -3397,6 +3291,189 @@ document.addEventListener('change',function(e){
   document.addEventListener('click',function(){
     setTimeout(refreshAll,80);
   });
+})();
+</script>
+
+
+<style>
+/* ===== v4.4 個人化目標同步修復 ===== */
+.personal-target-note{margin-top:6px;padding:7px 9px;background:#f5f9ff;border:1px solid #dfebf8;border-radius:8px;font-size:10px;color:#526b84}
+</style>
+<script>
+/* ===== v4.4：補水／熱量目標以「目前使用者基本資料」即時計算 ===== */
+(function(){
+  'use strict';
+
+  function E(id){return document.getElementById(id);}
+  function DB(){try{return (typeof db!=='undefined'&&db)?db:null;}catch(e){return null;}}
+  function n(v){var x=Number(v);return Number.isFinite(x)?x:0;}
+  function round50(x){return Math.round(x/50)*50;}
+
+  function getWaterTarget(){
+    var d=DB(), p=d&&d.profile||{}, w=n(p.weight);
+    if(w<=0)return 1500;
+    return Math.max(1500,round50(w*32));
+  }
+
+  function getCalorieTarget(){
+    var d=DB(), p=d&&d.profile||{};
+    var w=n(p.weight), h=n(p.height), a=n(p.age);
+    if(w<=0||h<=0||a<=0)return 0;
+    var bmr;
+    if(p.sex==='male')bmr=10*w+6.25*h-5*a+5;
+    else if(p.sex==='female')bmr=10*w+6.25*h-5*a-161;
+    else bmr=10*w+6.25*h-5*a-78;
+    var factor={sedentary:1.2,normal:1.375,active:1.55}[p.activity]||1.375;
+    return Math.max(0,round50(bmr*factor));
+  }
+
+  function dateKey(x){
+    var s=String((x&&x.date)||'').slice(0,10);
+    if(/^\\d{4}-\\d{2}-\\d{2}$/.test(s))return s;
+    var d=new Date((x&&x.date)||0);
+    if(isNaN(d))return '';
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function todayKey(){return dateKey({date:new Date().toISOString()});}
+
+  function waterToday(){
+    var d=DB(),t=todayKey(),sum=0;
+    (d&&d.water||[]).forEach(function(x){if(dateKey(x)===t)sum+=n(x.ml||x.amount||x.value||x.volume);});
+    (d&&d.drinks||[]).forEach(function(x){if(dateKey(x)===t)sum+=n(x.ml||x.amount||x.value||x.volume);});
+    return sum;
+  }
+  function caloriesToday(){
+    var d=DB(),t=todayKey(),sum=0;
+    (d&&d.foods||[]).forEach(function(x){if(dateKey(x)===t)sum+=n(x.kcal||x.calories);});
+    (d&&d.drinks||[]).forEach(function(x){if(dateKey(x)===t)sum+=n(x.kcal||x.calories);});
+    return sum;
+  }
+
+  function refreshTargets(){
+    var wt=getWaterTarget(),ct=getCalorieTarget(),w=waterToday(),c=caloriesToday();
+    var ids={
+      waterHeroGoal:wt.toLocaleString(),
+      calHeroGoal:ct?ct.toLocaleString():'—',
+      calGoal:ct?ct.toLocaleString():'—',
+      waterHero:w.toLocaleString(),
+      calHero:c.toLocaleString(),
+      calToday:c.toLocaleString()+' kcal'
+    };
+    Object.keys(ids).forEach(function(id){var el=E(id);if(el)el.textContent=ids[id];});
+
+    var wb=E('waterHeroBar');if(wb)wb.style.width=(wt?Math.min(100,w/wt*100):0)+'%';
+    var wr=E('waterRemain');if(wr)wr.textContent=w>=wt?'已達成目標':'剩餘 '+Math.max(0,wt-w).toLocaleString()+' mL';
+    var cb=E('calHeroBar');if(cb)cb.style.width=(ct?Math.min(100,c/ct*100):0)+'%';
+    var cr=E('calRemain');if(cr)cr.textContent=ct?Math.max(0,ct-c).toLocaleString():'—';
+    var rate=E('calRate');if(rate)rate.textContent=(ct?Math.round(c/ct*100):0)+'%';
+    var fill=E('calProgressFill');if(fill)fill.style.width=(ct?Math.min(100,c/ct*100):0)+'%';
+
+    var preview=E('profilePreview'),d=DB(),p=d&&d.profile||{};
+    if(preview&&p.height&&p.weight&&p.age){
+      var bmi=p.weight/Math.pow(p.height/100,2);
+      preview.textContent='BMI 約 '+bmi.toFixed(1)+'　｜　補水目標 '+wt.toLocaleString()+' mL／日　｜　每日熱量參考 '+(ct?ct.toLocaleString()+' kcal':'—');
+    }
+  }
+
+  /* 重新接管基本資料儲存，確保儲存的是目前帳戶 db */
+  window.saveProfile=function(){
+    var d=DB();if(!d)return false;
+    var ph=E('ph'),pw=E('pw'),pa=E('pa'),ps=E('ps'),pac=E('pac');
+    var x={
+      height:n(ph&&ph.value),
+      weight:n(pw&&pw.value),
+      age:n(pa&&pa.value),
+      sex:ps?ps.value:'',
+      activity:pac?pac.value:'normal'
+    };
+    if(!x.height||!x.weight||!x.age){
+      if(typeof toast==='function')toast('請填寫身高、體重與年齡');
+      return false;
+    }
+    d.profile=x;
+    if(typeof window.saveCurrentDb==='function')window.saveCurrentDb();
+    else{
+      var id;
+      try{id=typeof getCurrentUserId==='function'?getCurrentUserId():localStorage.getItem('health_manager_current_user')||'user_1';}catch(e){id='user_1';}
+      localStorage.setItem('health_manager_profile_'+id,JSON.stringify(d));
+      localStorage.setItem('health_manager_v122_final',JSON.stringify(d));
+    }
+    refreshTargets();
+    if(typeof window.updateCycleVisibility==='function')window.updateCycleVisibility();
+    if(typeof window.render==='function')window.render();
+    refreshTargets();
+    if(typeof toast==='function')toast('基本資料已儲存，補水與熱量目標已依個人資料更新');
+    return true;
+  };
+
+  /* 體重新增後也要重新計算補水目標與熱量目標 */
+  var originalWeight=window.weightModal;
+  window.weightModal=function(){
+    if(typeof originalWeight!=='function')return;
+    originalWeight();
+    setTimeout(function(){
+      refreshTargets();
+    },120);
+  };
+
+  /* 基本資料欄位修改時先顯示即時計算結果；儲存後正式寫入 */
+  ['ph','pw','pa','ps','pac'].forEach(function(id){
+    var el=E(id);
+    if(el&&!el.__v44){
+      el.__v44=true;
+      el.addEventListener('input',function(){
+        var d=DB()||{profile:{}},p=d.profile||{};
+        var temp={height:n(E('ph')&&E('ph').value),weight:n(E('pw')&&E('pw').value),age:n(E('pa')&&E('pa').value),sex:E('ps')?E('ps').value:'',activity:E('pac')?E('pac').value:'normal'};
+        var wt=temp.weight>0?Math.max(1500,round50(temp.weight*32)):1500;
+        var ct=0;
+        if(temp.weight>0&&temp.height>0&&temp.age>0){
+          var b=temp.sex==='male'?10*temp.weight+6.25*temp.height-5*temp.age+5:temp.sex==='female'?10*temp.weight+6.25*temp.height-5*temp.age-161:10*temp.weight+6.25*temp.height-5*temp.age-78;
+          ct=Math.max(0,round50(b*({sedentary:1.2,normal:1.375,active:1.55}[temp.activity]||1.375)));
+        }
+        var preview=E('profilePreview');
+        if(preview&&temp.height&&temp.weight&&temp.age)preview.textContent='尚未儲存　｜　補水目標 '+wt.toLocaleString()+' mL／日　｜　每日熱量參考 '+(ct?ct.toLocaleString()+' kcal':'—');
+      });
+    }
+  });
+
+  window.refreshPersonalTargets=refreshTargets;
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refreshTargets);
+  else setTimeout(refreshTargets,30);
+})();
+</script>
+
+
+<script>
+/* ===== v4.5 飲品／食物紀錄首頁精簡與查看全部導頁 ===== */
+(function(){
+  'use strict';
+  function page(name){
+    if(typeof window.showPage==='function'){window.showPage(name);return true;}
+    var el=document.querySelector('[data-page="'+name+'"]');
+    if(el){el.click();return true;}
+    return false;
+  }
+  function bind(){
+    var links=document.querySelectorAll('a,button');
+    links.forEach(function(el){
+      var t=(el.textContent||'').replace(/\s+/g,' ').trim();
+      if(t.indexOf('查看全部')===0 && !el.__v45){
+        var parent=el.closest('section, .card, div');
+        var s=parent?parent.textContent:'';
+        var target=s.indexOf('今日飲品紀錄')>=0?'drinks':(s.indexOf('今日食物紀錄')>=0?'foods':'');
+        if(target){
+          el.__v45=true;
+          el.removeAttribute('href');
+          el.type='button';
+          el.onclick=function(e){e.preventDefault();page(target);};
+          el.style.cursor='pointer';
+        }
+      }
+    });
+  }
+  window.goToDrinkRecords=function(){page('drinks');};
+  window.goToFoodRecords=function(){page('foods');};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);else setTimeout(bind,0);
 })();
 </script>
 
