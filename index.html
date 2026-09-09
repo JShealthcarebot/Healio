@@ -1020,7 +1020,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 <div class="navgroup">數據分析</div><button class="nav" data-page="trends" type="button">📈 <span>健康趨勢</span></button><button class="nav" data-page="calories" type="button">📊 <span>熱量分析</span></button>
 <div class="navgroup">財務記帳</div><button class="nav" data-page="income" type="button">💵 <span>收入記錄</span></button><button class="nav" data-page="expense" type="button">🧾 <span>支出記錄</span></button>
 <div class="navgroup">設定</div><button class="nav" data-page="profile" type="button">⚙️ <span>基本資料</span></button><button class="nav" data-page="salary" type="button">🗓️ <span>發薪日設定</span></button><button class="nav" data-page="reminder" type="button">🔔 <span>提醒設定</span></button><button class="nav" data-page="about" type="button">ℹ️ <span>關於我們</span></button>
-<div class="cycle">本期記帳週期<br><b id="sidePeriod">--/-- ～ --/--</b><br><span id="sideRemain">尚餘 -- 天</span></div><div class="mascot">💧</div><div class="motto">每天一小步<br>健康一大步！</div>
+<div class="cycle"><b style="font-size:11px">本期記帳週期</b><br><b id="sidePeriod">--/-- ～ --/--</b><br><span id="sideRemain">尚餘 -- 天</span></div><div class="mascot">💧</div><div class="motto">每天一小步<br>健康一大步！</div>
 </aside>
 
 <main class="main">
@@ -1291,9 +1291,284 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 </section>
 <section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" type="button" id="saveSalaryBtn">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v3.5</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v3.8</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
+
+
+<script>
+/* ===== v3.8 核心資料層修復 =====
+   v3.7 原檔缺少多個核心函式（loadUserData / saveCurrentDb /
+   save / normalize / loadProfile / render / 薪資週期計算），
+   導致使用者新增後，基本資料與發薪日儲存會在執行途中中斷。
+*/
+(function(){
+  'use strict';
+
+  var INDEX_KEY='health_manager_users_v1';
+  var CURRENT_KEY='health_manager_current_user';
+  var DEFAULT_KEY='health_manager_default_user';
+  var DEFAULT_ID='user_1';
+
+  window.$ = window.$ || function(id){ return document.getElementById(id); };
+
+  function users(){
+    try{
+      var raw=localStorage.getItem(INDEX_KEY);
+      var list=raw?JSON.parse(raw):[];
+      return Array.isArray(list)?list.filter(function(u){return u&&u.id;}):[];
+    }catch(e){ return []; }
+  }
+  function writeUsers(list){ localStorage.setItem(INDEX_KEY,JSON.stringify(list)); }
+
+  window.getUserIndex=function(){return users();};
+  window.saveUserIndex=function(list){writeUsers(list);};
+  window.userKey=function(id){return 'health_manager_profile_'+id;};
+
+  window.getCurrentUserId=function(){
+    var list=users();
+    var id=localStorage.getItem(CURRENT_KEY);
+    if(id && list.some(function(u){return u.id===id;})) return id;
+    if(list.length){
+      localStorage.setItem(CURRENT_KEY,list[0].id);
+      return list[0].id;
+    }
+    return DEFAULT_ID;
+  };
+  window.setCurrentUserId=function(id){
+    if(id) localStorage.setItem(CURRENT_KEY,id);
+  };
+  window.getDefaultUserId=function(){
+    return localStorage.getItem(DEFAULT_KEY)||'';
+  };
+  window.setDefaultUserId=function(id){
+    if(id) localStorage.setItem(DEFAULT_KEY,id);
+  };
+
+  function emptyDb(){
+    return {
+      profile:{height:0,weight:0,age:0,sex:'',activity:'normal'},
+      water:[],drinks:[],foods:[],bowel:[],weights:[],
+      finance:[],income:[],expense:[],salaryDay:5
+    };
+  }
+
+  window.normalize=function(){
+    if(!window.db || typeof window.db!=='object') window.db=emptyDb();
+    var d=window.db;
+    d.profile=d.profile&&typeof d.profile==='object'
+      ? Object.assign({height:0,weight:0,age:0,sex:'',activity:'normal'},d.profile)
+      : {height:0,weight:0,age:0,sex:'',activity:'normal'};
+    ['water','drinks','foods','bowel','weights','finance','income','expense'].forEach(function(k){
+      if(!Array.isArray(d[k])) d[k]=[];
+    });
+    var sd=Number(d.salaryDay);
+    d.salaryDay=(Number.isFinite(sd)&&sd>=1&&sd<=28)?Math.round(sd):5;
+    return d;
+  };
+
+  window.ensureUserIndex=function(){
+    var list=users();
+    if(!list.length){
+      list=[{id:DEFAULT_ID,name:'我的帳戶'}];
+      writeUsers(list);
+    }
+    var current=localStorage.getItem(CURRENT_KEY);
+    if(!current || !list.some(function(u){return u.id===current;})){
+      localStorage.setItem(CURRENT_KEY,list[0].id);
+    }
+    var def=localStorage.getItem(DEFAULT_KEY);
+    if(!def || !list.some(function(u){return u.id===def;})){
+      localStorage.setItem(DEFAULT_KEY,list[0].id);
+    }
+    return list;
+  };
+
+  window.loadUserData=function(id){
+    id=id||window.getCurrentUserId();
+    var raw=localStorage.getItem(window.userKey(id));
+    var data=null;
+    try{data=raw?JSON.parse(raw):null;}catch(e){data=null;}
+    window.db=data&&typeof data==='object'?data:emptyDb();
+    window.normalize();
+
+    /* 首次建立使用者時，立即建立該使用者的獨立資料 */
+    localStorage.setItem(window.userKey(id),JSON.stringify(window.db));
+    localStorage.setItem('health_manager_v122_final',JSON.stringify(window.db));
+    return window.db;
+  };
+
+  window.saveCurrentDb=function(){
+    var id=window.getCurrentUserId();
+    if(!id)return false;
+    window.normalize();
+    localStorage.setItem(window.userKey(id),JSON.stringify(window.db));
+    localStorage.setItem('health_manager_v122_final',JSON.stringify(window.db));
+    return true;
+  };
+
+  window.save=function(){
+    return window.saveCurrentDb();
+  };
+
+  window.loadProfile=function(){
+    window.normalize();
+    var p=window.db.profile||{};
+    var fields=[
+      ['ph',p.height||''],
+      ['pw',p.weight||''],
+      ['pa',p.age||'']
+    ];
+    fields.forEach(function(pair){
+      var el=document.getElementById(pair[0]);
+      if(el)el.value=pair[1];
+    });
+    var ps=document.getElementById('ps');
+    var pac=document.getElementById('pac');
+    if(ps)ps.value=p.sex||'';
+    if(pac)pac.value=p.activity||'normal';
+
+    var preview=document.getElementById('profilePreview');
+    if(preview){
+      if(p.height&&p.weight&&p.age){
+        var bmi=p.weight/Math.pow(p.height/100,2);
+        preview.textContent='BMI 約 '+bmi.toFixed(1)+'　｜　資料已載入，可繼續修改。';
+      }else{
+        preview.textContent='';
+      }
+    }
+  };
+
+  window.period=function(){
+    window.normalize();
+    var day=Math.min(28,Math.max(1,Number(window.db.salaryDay||5)));
+    var now=new Date();
+    var start=new Date(now.getFullYear(),now.getMonth(),day);
+    if(now<start) start=new Date(now.getFullYear(),now.getMonth()-1,day);
+    var end=new Date(start.getFullYear(),start.getMonth()+1,day-1);
+    return {s:start,e:end};
+  };
+
+  function fmt(d){
+    return String(d.getMonth()+1).padStart(2,'0')+'/'+
+           String(d.getDate()).padStart(2,'0');
+  }
+
+  window.render=function(){
+    try{
+      window.normalize();
+      var p=window.period();
+      var text=fmt(p.s)+' ～ '+fmt(p.e);
+      var financePeriod=document.getElementById('financePeriod');
+      var financePeriod2=document.getElementById('financePeriod2');
+      var sidePeriod=document.getElementById('sidePeriod');
+      if(financePeriod)financePeriod.textContent=text;
+      if(financePeriod2)financePeriod2.textContent=text;
+      if(sidePeriod)sidePeriod.textContent=text;
+
+      var remain=document.getElementById('sideRemain');
+      if(remain){
+        var now=new Date();
+        var days=Math.max(0,Math.ceil((p.e-now)/(24*60*60*1000)));
+        remain.textContent='尚餘 '+days+' 天';
+      }
+
+      var salary=document.getElementById('salaryDayLabel');
+      if(salary)salary.textContent=String(window.db.salaryDay||5);
+
+      var income=0,expense=0;
+      var list=(window.db.finance||[]).filter(function(x){
+        if(!x||!x.date)return false;
+        var d=new Date(x.date);
+        return d>=p.s && d<=new Date(p.e.getFullYear(),p.e.getMonth(),p.e.getDate(),23,59,59);
+      });
+      list.forEach(function(x){
+        var n=Number(x.amount||x.price||0);
+        if(x.type==='income')income+=n;
+        if(x.type==='expense')expense+=n;
+      });
+      var inc=document.getElementById('finIncome');
+      var exp=document.getElementById('finExpense');
+      var bal=document.getElementById('finBalance');
+      if(inc)inc.textContent='$'+income.toLocaleString();
+      if(exp)exp.textContent='$'+expense.toLocaleString();
+      if(bal)bal.textContent='$'+(income-expense).toLocaleString();
+    }catch(e){
+      console.error('v3.8 render error',e);
+    }
+  };
+
+  window.loadSalary=function(){
+    window.normalize();
+    var input=document.getElementById('salaryInput');
+    if(input)input.value=String(window.db.salaryDay||5);
+    var label=document.getElementById('salaryDayLabel');
+    if(label)label.textContent=String(window.db.salaryDay||5);
+    var preview=document.getElementById('salaryPreview');
+    if(preview){
+      var p=window.period();
+      preview.textContent='目前設定：每月 '+window.db.salaryDay+' 日｜本期：'+fmt(p.s)+' ～ '+fmt(p.e);
+    }
+  };
+
+  window.saveSalary=function(){
+    var input=document.getElementById('salaryInput');
+    var n=parseInt(input&&input.value,10);
+    if(!Number.isFinite(n)) n=5;
+    n=Math.min(28,Math.max(1,n));
+    window.db.salaryDay=n;
+    window.normalize();
+    window.saveCurrentDb();
+    window.loadSalary();
+    window.render();
+    if(typeof window.toast==='function')window.toast('發薪日已儲存：每月 '+n+' 日');
+    return true;
+  };
+
+  window.showPage=function(id){
+    var target=document.getElementById(id);
+    if(!target)return false;
+    document.querySelectorAll('.page').forEach(function(p){
+      p.classList.toggle('active',p===target);
+    });
+    document.querySelectorAll('.nav[data-page]').forEach(function(n){
+      n.classList.toggle('active',n.getAttribute('data-page')===id);
+    });
+    if(id==='profile')window.loadProfile();
+    if(id==='salary')window.loadSalary();
+    window.render();
+    window.scrollTo(0,0);
+    return true;
+  };
+
+  /* 初始化資料層 */
+  window.ensureUserIndex();
+  window.loadUserData(window.getCurrentUserId());
+  window.renderUserSwitcher=function(){
+    var list=users(), id=window.getCurrentUserId();
+    var current=list.find(function(u){return u.id===id;})||list[0];
+    document.querySelectorAll('#userSelect').forEach(function(select){
+      select.innerHTML='';
+      list.forEach(function(u){
+        var o=document.createElement('option');
+        o.value=u.id;
+        o.textContent=u.name||'未命名使用者';
+        o.selected=u.id===id;
+        select.appendChild(o);
+      });
+    });
+    ['currentUserBadge','topCurrentUser','sidebarCurrentUser'].forEach(function(domId){
+      var el=document.getElementById(domId);
+      if(el)el.textContent=(domId==='topCurrentUser'?'👤 ':'')+(current?current.name:'我的帳戶');
+    });
+  };
+
+  window.renderUserSwitcher();
+  window.loadProfile();
+  window.loadSalary();
+  window.render();
+})();
+</script>
 
 <script>
 const KEY='health_manager_v122_final';
