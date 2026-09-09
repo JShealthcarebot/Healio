@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v3.6</title>
+<title>健康管家 v3.7</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -1691,4 +1691,223 @@ document.addEventListener('change',function(e){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
 </script>
+
+<script>
+/* ===== v3.7 使用者管理獨立修復 =====
+   v3.6 的使用者核心函式不完整，導致「新增使用者」按下後
+   會在 saveUserIndex / userKey / setCurrentUserId 等處中斷。
+   本版建立一套獨立、可直接運作的使用者索引與新增流程。
+*/
+(function(){
+  'use strict';
+
+  var INDEX_KEY = 'health_manager_users_v1';
+  var CURRENT_KEY = 'health_manager_current_user';
+  var DEFAULT_KEY = 'health_manager_default_user';
+  var DEFAULT_ID = 'user_1';
+
+  function readUsers(){
+    try{
+      var raw = localStorage.getItem(INDEX_KEY);
+      var list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list.filter(function(u){return u && u.id;}) : [];
+    }catch(e){
+      console.error('readUsers error',e);
+      return [];
+    }
+  }
+
+  function writeUsers(list){
+    localStorage.setItem(INDEX_KEY, JSON.stringify(list));
+  }
+
+  function ensureUsers(){
+    var list = readUsers();
+    if(!list.length){
+      list = [{id:DEFAULT_ID,name:'我的帳戶'}];
+      writeUsers(list);
+    }
+    var current = localStorage.getItem(CURRENT_KEY);
+    if(!current || !list.some(function(u){return u.id===current;})){
+      current = list[0].id;
+      localStorage.setItem(CURRENT_KEY,current);
+    }
+    if(!localStorage.getItem(DEFAULT_KEY)){
+      localStorage.setItem(DEFAULT_KEY,list[0].id);
+    }
+    return list;
+  }
+
+  function currentId(){
+    var list = ensureUsers();
+    var id = localStorage.getItem(CURRENT_KEY);
+    return list.some(function(u){return u.id===id;}) ? id : list[0].id;
+  }
+
+  function renderUsers(){
+    var list = ensureUsers();
+    var id = currentId();
+    var current = list.find(function(u){return u.id===id;}) || list[0];
+
+    document.querySelectorAll('#userSelect').forEach(function(select){
+      select.innerHTML = '';
+      list.forEach(function(u){
+        var option = document.createElement('option');
+        option.value = u.id;
+        option.textContent = u.name || '未命名使用者';
+        option.selected = u.id === id;
+        select.appendChild(option);
+      });
+    });
+
+    document.querySelectorAll('#currentUserBadge').forEach(function(el){
+      el.textContent = current ? current.name : '我的帳戶';
+    });
+    document.querySelectorAll('#topCurrentUser').forEach(function(el){
+      el.textContent = '👤 ' + (current ? current.name : '我的帳戶');
+    });
+    document.querySelectorAll('#sidebarCurrentUser').forEach(function(el){
+      el.textContent = current ? current.name : '我的帳戶';
+    });
+  }
+
+  function openDialog(){
+    var dialog = document.getElementById('newUserDialog');
+    var input = document.getElementById('newUserName');
+    if(!dialog) return;
+    dialog.classList.add('show');
+    if(input){
+      input.value = '';
+      setTimeout(function(){input.focus();},50);
+    }
+  }
+
+  function closeDialog(){
+    var dialog = document.getElementById('newUserDialog');
+    if(dialog) dialog.classList.remove('show');
+  }
+
+  function addUser(){
+    var input = document.getElementById('newUserName');
+    var name = String(input && input.value || '').trim();
+
+    if(!name){
+      if(typeof window.toast === 'function') window.toast('請輸入使用者名稱');
+      else alert('請輸入使用者名稱');
+      if(input) input.focus();
+      return false;
+    }
+
+    var list = ensureUsers();
+
+    if(list.some(function(u){
+      return String(u.name || '').trim() === name;
+    })){
+      if(typeof window.toast === 'function') window.toast('已有相同名稱的使用者');
+      else alert('已有相同名稱的使用者');
+      return false;
+    }
+
+    var id = 'user_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+
+    list.push({id:id,name:name});
+    writeUsers(list);
+    localStorage.setItem(CURRENT_KEY,id);
+
+    /* 建立獨立資料容器，不覆蓋其他使用者 */
+    var emptyDb = {
+      profile:{height:0,weight:0,age:0,sex:'',activity:'normal'},
+      water:[],drinks:[],foods:[],bowel:[],weights:[],
+      finance:[],income:[],expense:[],salaryDay:5
+    };
+    localStorage.setItem('health_manager_profile_' + id, JSON.stringify(emptyDb));
+
+    renderUsers();
+    closeDialog();
+
+    if(typeof window.loadUserData === 'function'){
+      try{ window.loadUserData(id); }catch(e){ console.warn('loadUserData skipped',e); }
+    }
+    if(typeof window.loadProfile === 'function'){
+      try{ window.loadProfile(); }catch(e){ console.warn('loadProfile skipped',e); }
+    }
+    if(typeof window.render === 'function'){
+      try{ window.render(); }catch(e){ console.warn('render skipped',e); }
+    }
+
+    if(typeof window.toast === 'function') window.toast('已新增使用者：' + name);
+    return true;
+  }
+
+  function switchUser(id){
+    var list = ensureUsers();
+    if(!list.some(function(u){return u.id===id;})) return false;
+
+    localStorage.setItem(CURRENT_KEY,id);
+    renderUsers();
+
+    if(typeof window.loadUserData === 'function'){
+      try{window.loadUserData(id);}catch(e){console.warn('switch load skipped',e);}
+    }
+    if(typeof window.loadProfile === 'function'){
+      try{window.loadProfile();}catch(e){}
+    }
+    if(typeof window.render === 'function'){
+      try{window.render();}catch(e){}
+    }
+    return true;
+  }
+
+  /* 將必要 API 掛到 window，讓 inline onclick 與其他舊程式都能找到 */
+  window.openNewUserDialog = openDialog;
+  window.closeNewUserDialog = closeDialog;
+  window.confirmAddUser = addUser;
+  window.addUser = addUser;
+  window.switchUser = switchUser;
+
+  /* 直接處理使用者區按鈕，不依賴舊版不存在的 addUserBtn */
+  function bind(){
+    ensureUsers();
+    renderUsers();
+
+    var addBtn = Array.from(document.querySelectorAll('.profile-user-controls button'))
+      .find(function(btn){
+        return btn.textContent.replace(/\s/g,'').indexOf('新增使用者') >= 0;
+      });
+
+    if(addBtn && !addBtn.__v37){
+      addBtn.__v37 = true;
+      addBtn.addEventListener('click',function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        openDialog();
+      });
+    }
+
+    var cancelBtn = document.querySelector('#newUserDialog .user-dialog-cancel');
+    if(cancelBtn && !cancelBtn.__v37){
+      cancelBtn.__v37 = true;
+      cancelBtn.addEventListener('click',function(e){
+        e.preventDefault();
+        closeDialog();
+      });
+    }
+
+    var select = document.getElementById('userSelect');
+    if(select && !select.__v37){
+      select.__v37 = true;
+      select.addEventListener('change',function(){
+        switchUser(this.value);
+      });
+    }
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded',bind);
+  }else{
+    bind();
+  }
+})();
+</script>
+
 </body></html>
