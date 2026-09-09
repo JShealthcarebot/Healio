@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v4.14</title>
+<title>健康管家 v5</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -1009,6 +1009,11 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 #dashboard .dashboard-finance,
 #dashboard [data-section="finance"]{display:none!important}
 </style>
+<style>
+/* v4.15：首頁總覽移除重複的財務記帳視覺區塊；財務頁與快速記錄保留 */
+#dashboard .dashboard-finance-title,
+#dashboard .dashboard-finance-block{display:none!important}
+</style>
 </head>
 <body>
 <div class="app">
@@ -1106,7 +1111,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 <div class="card chart"><h4>排便次數趨勢（次）</h4><div class="chartarea purple" id="bowelChart"></div><div class="chartlabels"><span>6 天前</span><span>今天</span></div></div>
 </div>
 
-<div class="section-title">財務記帳</div><div class="finance finance-compact">
+<div class="section-title dashboard-finance-title">財務記帳</div><div class="finance finance-compact dashboard-finance-block">
 <div class="finance-title">本期財務總覽 <span class="finance-period-inline">（<span id="financePeriod"></span>）</span></div>
 <div class="money3">
 <div class="moneybox"><span class="income">收入</span><b class="income" id="finIncome">$0</b></div>
@@ -1338,7 +1343,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 
 <section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" type="button" id="saveSalaryBtn">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v4.14</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v4.16</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
 
@@ -3305,7 +3310,10 @@ document.addEventListener('change',function(e){
     var el=D(id);if(!el)return;
     var rows=(Array.isArray(arr)?arr:[]).slice().sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});
     if(!rows.length){el.innerHTML='<div class="empty">尚無紀錄</div>';return;}
-    el.innerHTML='<div class="record-list">'+rows.map(function(x){return '<div class="record-row">'+formatter(x)+'</div>';}).join('')+'</div>';
+    el.innerHTML='<div class="record-list">'+rows.map(function(x){
+      var actions=id==='bowelTable'?'<div class="record-actions"><button type="button" class="record-edit" data-bowel-edit="'+String(x.id||'')+'">編輯</button><button type="button" class="record-delete" data-bowel-delete="'+String(x.id||'')+'">刪除</button></div>':'';
+      return '<div class="record-row record-row-with-actions">'+formatter(x)+actions+'</div>';
+    }).join('')+'</div>';
   }
 
   /* 修正首頁補水：所有液體攝取都算入補水進度；飲品熱量另計 */
@@ -4769,6 +4777,96 @@ document.addEventListener('change',function(e){
   document.addEventListener('change',function(){setTimeout(render,150);},true);
   setInterval(function(){var s=sig();if(s!==lastSig){lastSig=s;render();}},500);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
+</script>
+
+
+<style>
+/* ===== v4.16 排便紀錄編輯／刪除 ===== */
+.record-row-with-actions{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.record-row-with-actions>.muted{margin-left:auto}
+.record-actions{display:flex;gap:6px;flex-shrink:0}
+.record-actions button{border:1px solid #dce5ed;background:#fff;border-radius:7px;padding:5px 9px;font-size:11px;cursor:pointer}
+.record-actions .record-edit{color:#2878d7}
+.record-actions .record-delete{color:#d64a4a}
+.bowel-edit-dialog{padding-top:4px}
+.bowel-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bowel-edit-grid label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:700}
+.bowel-edit-grid select{padding:9px;border:1px solid #dce5ed;border-radius:8px;background:#fff}
+@media(max-width:600px){.record-row-with-actions{align-items:flex-start}.record-row-with-actions>.muted{display:none}.record-actions{margin-left:auto}.bowel-edit-grid{grid-template-columns:1fr}}
+</style>
+<script>
+/* ===== v4.16：排便紀錄 CRUD ===== */
+(function(){
+  'use strict';
+
+  function db(){
+    return (window.db && typeof window.db==='object') ? window.db : null;
+  }
+  function esc(s){
+    return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+    });
+  }
+  var names={1:'小石頭型',2:'結塊型',3:'裂紋型',4:'黃金型 ⭐',5:'軟塊型',6:'糊狀型',7:'水狀型'};
+
+  function close(){
+    var m=document.getElementById('modal');
+    if(m)m.classList.remove('show');
+  }
+  function save(){
+    if(typeof window.saveCurrentDb==='function') window.saveCurrentDb();
+    if(typeof window.render==='function') window.render();
+    if(typeof window.renderV49HealthTrends==='function') window.renderV49HealthTrends();
+    if(typeof window.refreshAnalysisPages==='function') window.refreshAnalysisPages();
+  }
+
+  window.editBowel=function(id){
+    var d=db();if(!d)return;
+    var item=(Array.isArray(d.bowel)?d.bowel:[]).find(function(x){return String(x.id)===String(id);});
+    if(!item){alert('找不到這筆排便紀錄');return;}
+    var box=document.getElementById('modalBox'),modal=document.getElementById('modal');
+    if(!box||!modal)return;
+
+    box.innerHTML='<h2 class="repair-form-title">編輯排便紀錄</h2>'+
+      '<div class="bowel-edit-dialog">'+
+      '<label>型態<select id="editBowelType">'+Object.keys(names).map(function(k){return '<option value="'+k+'" '+(Number(item.type)===Number(k)?'selected':'')+'>'+k+' '+names[k]+'</option>';}).join('')+'</select></label>'+
+      '<label>量<select id="editBowelQty"><option '+(item.quantity==='少量'?'selected':'')+'>少量</option><option '+((item.quantity||'中等量')==='中等量'?'selected':'')+'>中等量</option><option '+(item.quantity==='大量'?'selected':'')+'>大量</option></select></label>'+
+      '<label>是否用力<select id="editBowelStrain"><option value="no" '+(!item.straining?'selected':'')+'>否</option><option value="yes" '+(item.straining?'selected':'')+'>是</option></select></label>'+
+      '<label>排不乾淨感<select id="editBowelIncomplete"><option value="no" '+(!item.incomplete?'selected':'')+'>否</option><option value="yes" '+(item.incomplete?'selected':'')+'>是</option></select></label>'+
+      '<label>腹脹<select id="editBowelBloat"><option value="no" '+(!item.bloating?'selected':'')+'>否</option><option value="yes" '+(item.bloating?'selected':'')+'>是</option></select></label>'+
+      '</div>'+
+      '<div class="modal-actions"><button type="button" class="secondary" id="editBowelCancel">取消</button><button type="button" class="primary" id="editBowelSave">儲存修改</button></div>';
+
+    modal.classList.add('show');
+    document.getElementById('editBowelCancel').onclick=close;
+    document.getElementById('editBowelSave').onclick=function(){
+      item.type=Number(document.getElementById('editBowelType').value);
+      item.quantity=document.getElementById('editBowelQty').value;
+      item.straining=document.getElementById('editBowelStrain').value==='yes';
+      item.incomplete=document.getElementById('editBowelIncomplete').value==='yes';
+      item.bloating=document.getElementById('editBowelBloat').value==='yes';
+      save();close();
+    };
+  };
+
+  window.deleteBowel=function(id){
+    var d=db();if(!d)return;
+    var arr=Array.isArray(d.bowel)?d.bowel:[];
+    var idx=arr.findIndex(function(x){return String(x.id)===String(id);});
+    if(idx<0){alert('找不到這筆排便紀錄');return;}
+    if(!confirm('確定要刪除這筆排便紀錄嗎？'))return;
+    arr.splice(idx,1);
+    d.bowel=arr;
+    save();
+  };
+
+  document.addEventListener('click',function(e){
+    var edit=e.target.closest('[data-bowel-edit]');
+    if(edit){e.preventDefault();e.stopPropagation();window.editBowel(edit.getAttribute('data-bowel-edit'));return;}
+    var del=e.target.closest('[data-bowel-delete]');
+    if(del){e.preventDefault();e.stopPropagation();window.deleteBowel(del.getAttribute('data-bowel-delete'));return;}
+  },true);
 })();
 </script>
 
