@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v4.10</title>
+<title>健康管家 v4.12</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -1331,7 +1331,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 
 <section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" type="button" id="saveSalaryBtn">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v4.10</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v4.12</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
 
@@ -4190,6 +4190,417 @@ document.addEventListener('change',function(e){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(refreshAnalysis,200);});
   else setTimeout(refreshAnalysis,200);
   document.addEventListener('click',function(){setTimeout(refreshAnalysis,150);});
+})();
+</script>
+
+
+<style>
+/* ===== v4.11 數據分析頁強制同步層 ===== */
+.v411-analysis-chart{width:100%;height:100%;min-height:240px}
+.v411-analysis-chart svg{width:100%;height:100%;display:block}
+.v411-analysis-empty{height:100%;min-height:240px;display:flex;align-items:center;justify-content:center;color:#8b98a5;font-size:13px}
+.v411-record-summary{margin-top:10px;padding:10px 12px;border-radius:10px;background:#f6f9fc;color:#566b7e;font-size:11px;line-height:1.7}
+</style>
+<script>
+/* ===== v4.11：直接接管側邊欄「健康趨勢／熱量分析」 ===== */
+(function(){
+  'use strict';
+
+  function E(id){return document.getElementById(id);}
+  function DB(){
+    try{return (typeof db!=='undefined' && db && typeof db==='object') ? db : null;}
+    catch(e){return null;}
+  }
+  function N(x,keys){
+    for(var i=0;i<keys.length;i++){
+      var v=Number(x&&x[keys[i]]);
+      if(Number.isFinite(v))return v;
+    }
+    return 0;
+  }
+  function key(v){
+    if(!v)return '';
+    var s=String(v);
+    var m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(m)return m[1]+'-'+m[2]+'-'+m[3];
+    var d=new Date(v);
+    if(isNaN(d))return '';
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function dateOf(x){
+    return x&&(x.date||x.datetime||x.time||x.createdAt||x.timestamp);
+  }
+  function days(){
+    var n=new Date();n.setHours(0,0,0,0),a=[];
+    for(var i=6;i>=0;i--){
+      var d=new Date(n);d.setDate(n.getDate()-i);
+      a.push({k:key(d),l:(d.getMonth()+1)+'/'+d.getDate()});
+    }
+    return a;
+  }
+  function series(type){
+    var d=DB()||{}, ds=days(), a=ds.map(function(x){return {k:x.k,l:x.l,v:0};});
+    function add(arr,keys){
+      (Array.isArray(arr)?arr:[]).forEach(function(x){
+        var r=a.find(function(z){return z.k===key(dateOf(x));});
+        if(r)r.v+=N(x,keys);
+      });
+    }
+    if(type==='water'){
+      add(d.water,['ml','amount','value','volume']);
+      add(d.drinks,['ml','amount','value','volume']);
+    }else if(type==='calorie'){
+      add(d.foods,['kcal','calories']);
+      add(d.drinks,['kcal','calories']);
+    }else if(type==='bowel'){
+      (Array.isArray(d.bowel)?d.bowel:[]).forEach(function(x){
+        var r=a.find(function(z){return z.k===key(dateOf(x));});
+        if(r)r.v++;
+      });
+    }else if(type==='weight'){
+      (Array.isArray(d.weights)?d.weights:[]).forEach(function(x){
+        var r=a.find(function(z){return z.k===key(dateOf(x));});
+        var v=N(x,['weight','kg','value']);
+        if(r&&v)r.v=v;
+      });
+    }
+    return a;
+  }
+  function targets(){
+    var d=DB()||{},p=d.profile||{},w=N(p,['weight']),h=N(p,['height']),a=N(p,['age']);
+    var water=0,cal=0;
+    try{water=Number(typeof waterTarget==='function'?waterTarget():0)||0;}catch(e){}
+    try{cal=Number(typeof calorieTarget==='function'?calorieTarget():0)||0;}catch(e){}
+    if(!water)water=Math.max(1500,Math.round(w*32/50)*50);
+    if(!cal&&w&&h&&a){
+      var b=p.sex==='male'?10*w+6.25*h-5*a+5:p.sex==='female'?10*w+6.25*h-5*a-161:10*w+6.25*h-5*a-78;
+      cal=Math.max(0,Math.round(b*({sedentary:1.2,normal:1.375,active:1.55}[p.activity]||1.375)/50)*50);
+    }
+    return {water:water,cal:cal};
+  }
+  function chart(data,type,goal){
+    var W=800,H=260,L=48,R=24,T=18,B=38,PW=W-L-R,PH=H-T-B;
+    var vals=data.map(function(x){return x.v;}).filter(function(v){return v>0;});
+    var max=Math.max.apply(null,vals.concat([1]));
+    if(goal)max=Math.max(max,goal);
+    if(type==='water')max=Math.max(max,1500);
+    if(type==='calorie')max=Math.max(max,Math.ceil(max/500)*500);
+    if(type==='weight')max=Math.max(max,Math.ceil(max/5)*5||5);
+    if(type==='bowel')max=Math.max(max,4);
+
+    var s='<svg viewBox="0 0 '+W+' '+H+'">';
+    for(var i=0;i<=4;i++){
+      var y=T+PH-i*PH/4;
+      s+='<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="#e5ebf1" stroke-width="1"/>';
+    }
+    if(goal){
+      var gy=T+PH-goal/max*PH;
+      s+='<line x1="'+L+'" y1="'+gy+'" x2="'+(W-R)+'" y2="'+gy+'" stroke="#8c99a6" stroke-width="2" stroke-dasharray="7 5"/>';
+      s+='<text x="'+(W-R)+'" y="'+Math.max(14,gy-7)+'" text-anchor="end" font-size="11" fill="#687887">每日目標 '+goal.toLocaleString()+'</text>';
+    }
+
+    var color=type==='water'?'#2f82dc':type==='calorie'?'#e28a3b':type==='weight'?'#2db77d':'#7957c9';
+
+    if(type==='weight'){
+      var pts=data.map(function(r,i){return {x:L+PW*i/6,y:T+PH-r.v/max*PH,r:r};}).filter(function(p){return p.r.v>0;});
+      if(pts.length){
+        s+='<polyline points="'+pts.map(function(p){return p.x+','+p.y;}).join(' ')+'" fill="none" stroke="'+color+'" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>';
+        pts.forEach(function(p){
+          s+='<circle cx="'+p.x+'" cy="'+p.y+'" r="5" fill="'+color+'"/>';
+          s+='<text x="'+p.x+'" y="'+Math.max(14,p.y-11)+'" text-anchor="middle" font-size="11" font-weight="900" fill="#30475d">'+p.r.v.toFixed(1)+'</text>';
+        });
+      }
+    }else{
+      data.forEach(function(r,i){
+        var x=L+PW*i/6;
+        var bh=r.v>0?PH*r.v/max:0;
+        if(bh)s+='<rect x="'+(x-27)+'" y="'+(T+PH-bh)+'" width="54" height="'+bh+'" rx="6" fill="'+color+'" opacity=".82"/>';
+        if(r.v)s+='<text x="'+x+'" y="'+Math.max(14,T+PH-bh-8)+'" text-anchor="middle" font-size="11" font-weight="900" fill="#30475d">'+Math.round(r.v).toLocaleString()+'</text>';
+      });
+    }
+    data.forEach(function(r,i){
+      var x=L+PW*i/6;
+      s+='<text x="'+x+'" y="'+(H-10)+'" text-anchor="middle" font-size="10" fill="#778695">'+r.l+'</text>';
+    });
+    s+='</svg>';
+    return s;
+  }
+
+  function renderTrendPage(){
+    var d=DB();if(!d)return;
+    var w=series('water'),c=series('calorie'),wt=series('weight'),b=series('bowel'),g=targets();
+    var avgW=Math.round(w.reduce(function(s,x){return s+x.v;},0)/7);
+    var avgC=Math.round(c.reduce(function(s,x){return s+x.v;},0)/7);
+    var bc=b.reduce(function(s,x){return s+x.v;},0);
+    var valid=wt.filter(function(x){return x.v>0;}),change=valid.length>=2?valid[valid.length-1].v-valid[0].v:null;
+
+    [['trendWaterAvg',avgW.toLocaleString()],['trendCalAvg',avgC.toLocaleString()],['trendBowelCount',bc],['trendWeightChange',change===null?'—':(change>0?'+':'')+change.toFixed(1)+' kg']].forEach(function(x){
+      var el=E(x[0]);if(el)el.textContent=x[1];
+    });
+
+    var canvas=E('healthTrendChart');
+    if(canvas){
+      var box=canvas.parentElement;
+      if(box){
+        canvas.style.display='none';
+        var old=box.querySelector('.v411-trend');if(old)old.remove();
+        var div=document.createElement('div');div.className='v411-trend v411-analysis-chart';
+        div.innerHTML=chart(w,'water',g.water);
+        box.appendChild(div);
+      }
+    }
+
+    var txt=E('healthAnalysisText');
+    if(txt){
+      txt.innerHTML='近 7 天平均補水 <b>'+avgW.toLocaleString()+' mL</b>；平均熱量 <b>'+avgC.toLocaleString()+' kcal</b>；排便共 <b>'+bc+' 次</b>。'+
+        (g.water?' 目前每日補水目標 <b>'+g.water.toLocaleString()+' mL</b>。':'');
+    }
+  }
+
+  function renderCaloriesPage(){
+    var d=DB();if(!d)return;
+    var c=series('calorie'),g=targets(),today=key(new Date()),food=0,drink=0;
+    (Array.isArray(d.foods)?d.foods:[]).forEach(function(x){if(key(dateOf(x))===today)food+=N(x,['kcal','calories']);});
+    (Array.isArray(d.drinks)?d.drinks:[]).forEach(function(x){if(key(dateOf(x))===today)drink+=N(x,['kcal','calories']);});
+    var total=food+drink,rate=g.cal?Math.round(total/g.cal*100):0;
+
+    [['calToday',total.toLocaleString()+' kcal'],['calGoal',g.cal?g.cal.toLocaleString():'—'],['calRemain',g.cal?Math.max(0,g.cal-total).toLocaleString():'—'],['calFood',food.toLocaleString()+' kcal'],['calDrink',drink.toLocaleString()+' kcal'],['calRate',rate+'%']].forEach(function(x){
+      var el=E(x[0]);if(el)el.textContent=x[1];
+    });
+    var fill=E('calProgressFill');if(fill)fill.style.width=Math.min(100,rate)+'%';
+
+    var canvas=E('calorieTrendChart');
+    if(canvas){
+      var box=canvas.parentElement;
+      if(box){
+        canvas.style.display='none';
+        var old=box.querySelector('.v411-cal');if(old)old.remove();
+        var div=document.createElement('div');div.className='v411-cal v411-analysis-chart';
+        div.innerHTML=chart(c,'calorie',g.cal);
+        box.appendChild(div);
+      }
+    }
+
+    var list=E('calorieRecordList');
+    if(list){
+      var rows=[];
+      (Array.isArray(d.foods)?d.foods:[]).forEach(function(x){if(key(dateOf(x))===today)rows.push('食物｜'+(x.name||'未命名')+' '+N(x,['kcal','calories']).toLocaleString()+' kcal');});
+      (Array.isArray(d.drinks)?d.drinks:[]).forEach(function(x){if(key(dateOf(x))===today)rows.push('飲品｜'+(x.name||'未命名')+' '+N(x,['kcal','calories']).toLocaleString()+' kcal');});
+      list.innerHTML=rows.length?rows.map(function(x){return '<div class="record-row">'+x+'</div>';}).join(''):'<div class="empty">今日尚無熱量紀錄</div>';
+    }
+    var txt=E('calorieAnalysisText');
+    if(txt)txt.innerHTML=g.cal?'今日攝取 <b>'+total.toLocaleString()+' kcal</b>，達每日參考的 <b>'+rate+'%</b>。':'請先完成基本資料，以計算個人化熱量參考值。';
+  }
+
+  function refresh(){
+    var active=document.querySelector('.page.active');
+    if(!active)return;
+    if(active.id==='trends')renderTrendPage();
+    if(active.id==='calories')renderCaloriesPage();
+  }
+
+  /* 直接綁定數據分析兩個側邊欄按鈕，避免被舊版導覽函式覆蓋 */
+  function bind(){
+    document.querySelectorAll('.nav[data-page="trends"],.nav[data-page="calories"]').forEach(function(btn){
+      if(btn.__v411)return;
+      btn.__v411=true;
+      btn.addEventListener('click',function(e){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        var id=btn.getAttribute('data-page'),page=E(id);
+        if(!page)return;
+        document.querySelectorAll('.page').forEach(function(p){p.classList.toggle('active',p===page);});
+        document.querySelectorAll('.nav[data-page]').forEach(function(n){n.classList.toggle('active',n===btn);});
+        setTimeout(refresh,0);setTimeout(refresh,100);setTimeout(refresh,300);
+        window.scrollTo(0,0);
+      },true);
+    });
+  }
+
+  function boot(){
+    bind();refresh();
+    [100,300,700].forEach(function(ms){setTimeout(function(){bind();refresh();},ms);});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+  document.addEventListener('click',function(){setTimeout(function(){bind();refresh();},180);});
+  document.addEventListener('change',function(){setTimeout(refresh,180);});
+  window.addEventListener('resize',function(){setTimeout(refresh,120);});
+  window.refreshAnalysisPages=refresh;
+})();
+</script>
+
+
+<style>
+/* ===== v4.12 分析頁最終資料來源統一 ===== */
+.v412-chart{width:100%;height:360px;min-height:360px}
+.v412-chart svg{width:100%;height:100%;display:block}
+.v412-kpi{display:flex;align-items:baseline;gap:6px}
+.v412-kpi b{font-size:28px}
+.v412-kpi span{font-size:12px;color:#71808d}
+.v412-summary{margin-top:10px;padding:12px 14px;border-radius:10px;background:#f6f9fc;font-size:11px;color:#536779;line-height:1.8}
+</style>
+<script>
+/* ===== v4.12：分析頁統一以 window.db（多使用者正式資料）為唯一來源 ===== */
+(function(){
+  'use strict';
+
+  function D(){
+    try{
+      /* 多使用者核心以 window.db 為正式資料容器 */
+      if(window.db && typeof window.db==='object') return window.db;
+      if(typeof db!=='undefined' && db && typeof db==='object') return db;
+    }catch(e){}
+    return null;
+  }
+  function E(id){return document.getElementById(id);}
+  function N(x,keys){
+    for(var i=0;i<keys.length;i++){
+      var v=Number(x&&x[keys[i]]);
+      if(Number.isFinite(v))return v;
+    }
+    return 0;
+  }
+  function K(v){
+    if(!v)return '';
+    var s=String(v),m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(m)return m[1]+'-'+m[2]+'-'+m[3];
+    var d=new Date(v);if(isNaN(d))return '';
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function R(x){return x&&(x.date||x.datetime||x.time||x.createdAt||x.timestamp);}
+  function DAYS(){
+    var n=new Date();n.setHours(0,0,0,0),a=[];
+    for(var i=6;i>=0;i--){var d=new Date(n);d.setDate(n.getDate()-i);a.push({k:K(d),l:(d.getMonth()+1)+'/'+d.getDate()});}
+    return a;
+  }
+  function S(type){
+    var d=D()||{},ds=DAYS(),a=ds.map(function(x){return {k:x.k,l:x.l,v:0};});
+    function add(arr,keys){(Array.isArray(arr)?arr:[]).forEach(function(x){var r=a.find(function(z){return z.k===K(R(x));});if(r)r.v+=N(x,keys);});}
+    if(type==='water'){add(d.water,['ml','amount','value','volume']);add(d.drinks,['ml','amount','value','volume']);}
+    if(type==='calorie'){add(d.foods,['kcal','calories']);add(d.drinks,['kcal','calories']);}
+    if(type==='bowel'){(Array.isArray(d.bowel)?d.bowel:[]).forEach(function(x){var r=a.find(function(z){return z.k===K(R(x));});if(r)r.v++;});}
+    if(type==='weight'){
+      var latest={};
+      (Array.isArray(d.weights)?d.weights:[]).forEach(function(x){var k=K(R(x)),v=N(x,['weight','kg','value']);if(k&&v)latest[k]=v;});
+      a.forEach(function(r){if(latest[r.k])r.v=latest[r.k];});
+    }
+    return a;
+  }
+  function G(){
+    var d=D()||{},p=d.profile||{},w=N(p,['weight']),h=N(p,['height']),a=N(p,['age']);
+    var water=Math.max(1500,Math.round(w*32/50)*50),cal=0;
+    if(w&&h&&a){
+      var b=p.sex==='male'?10*w+6.25*h-5*a+5:p.sex==='female'?10*w+6.25*h-5*a-161:10*w+6.25*h-5*a-78;
+      cal=Math.max(0,Math.round(b*({sedentary:1.2,normal:1.375,active:1.55}[p.activity]||1.375)/50)*50);
+    }
+    return {water:water,cal:cal};
+  }
+  function chart(data,type,goal){
+    var W=900,H=360,L=60,R=28,T=28,B=48,PW=W-L-R,PH=H-T-B;
+    var positive=data.filter(function(x){return x.v>0;}).map(function(x){return x.v;});
+    var max=Math.max.apply(null,positive.concat([1]));
+    if(goal)max=Math.max(max,goal);
+    if(type==='water')max=Math.max(max,1500);
+    if(type==='calorie')max=Math.max(max,Math.ceil(max/500)*500);
+    if(type==='weight')max=Math.max(max,Math.ceil(max/5)*5||5);
+    if(type==='bowel')max=Math.max(max,4);
+    var color=type==='water'?'#2f82dc':type==='calorie'?'#e28a3b':type==='weight'?'#2db77d':'#7957c9';
+    var s='<svg viewBox="0 0 '+W+' '+H+'">';
+    for(var i=0;i<=4;i++){var y=T+PH-i*PH/4;s+='<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="#e4ebf1" stroke-width="1"/><text x="'+(L-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="10" fill="#83909c">'+Math.round(max*i/4).toLocaleString()+'</text>';}
+    if(goal){var gy=T+PH-goal/max*PH;s+='<line x1="'+L+'" y1="'+gy+'" x2="'+(W-R)+'" y2="'+gy+'" stroke="#7f8c99" stroke-width="2" stroke-dasharray="8 5"/><text x="'+(W-R)+'" y="'+Math.max(15,gy-8)+'" text-anchor="end" font-size="11" fill="#697887">每日目標 '+goal.toLocaleString()+'</text>';}
+    if(type==='weight'){
+      var pts=data.map(function(r,i){return {x:L+PW*i/6,y:T+PH-r.v/max*PH,r:r};}).filter(function(p){return p.r.v>0;});
+      if(pts.length){
+        s+='<polyline points="'+pts.map(function(p){return p.x+','+p.y;}).join(' ')+'" fill="none" stroke="'+color+'" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>';
+        pts.forEach(function(p){s+='<circle cx="'+p.x+'" cy="'+p.y+'" r="6" fill="'+color+'"/><text x="'+p.x+'" y="'+Math.max(16,p.y-12)+'" text-anchor="middle" font-size="12" font-weight="900" fill="#30475d">'+p.r.v.toFixed(1)+'</text>';});
+      }
+    }else{
+      data.forEach(function(r,i){
+        var x=L+PW*i/6,bh=r.v?PH*r.v/max:0;
+        if(bh)s+='<rect x="'+(x-30)+'" y="'+(T+PH-bh)+'" width="60" height="'+bh+'" rx="7" fill="'+color+'" opacity=".82"/>';
+        if(r.v)s+='<text x="'+x+'" y="'+Math.max(17,T+PH-bh-9)+'" text-anchor="middle" font-size="12" font-weight="900" fill="#30475d">'+Math.round(r.v).toLocaleString()+'</text>';
+      });
+    }
+    data.forEach(function(r,i){var x=L+PW*i/6;s+='<text x="'+x+'" y="'+(H-14)+'" text-anchor="middle" font-size="11" fill="#71808e">'+r.l+'</text>';});
+    s+='</svg>';return s;
+  }
+
+  function renderTrends(){
+    var d=D();if(!d)return;
+    var w=S('water'),c=S('calorie'),wt=S('weight'),b=S('bowel'),g=G();
+    var avgW=Math.round(w.reduce(function(a,x){return a+x.v;},0)/7);
+    var avgC=Math.round(c.reduce(function(a,x){return a+x.v;},0)/7);
+    var totalB=b.reduce(function(a,x){return a+x.v;},0);
+    var valid=wt.filter(function(x){return x.v>0;}),chg=valid.length>=2?valid[valid.length-1].v-valid[0].v:null;
+    [['trendWaterAvg',avgW.toLocaleString()],['trendCalAvg',avgC.toLocaleString()],['trendBowelCount',String(totalB)],['trendWeightChange',chg===null?'—':(chg>0?'+':'')+chg.toFixed(1)+' kg']].forEach(function(x){var e=E(x[0]);if(e)e.textContent=x[1];});
+
+    var canvas=E('healthTrendChart');
+    if(canvas){
+      var box=canvas.parentElement;
+      canvas.style.display='none';
+      if(box){
+        var old=box.querySelector('.v412-trend');if(old)old.remove();
+        var div=document.createElement('div');div.className='v412-trend v412-chart';
+        div.innerHTML=chart(w,'water',g.water);
+        box.style.height='360px';box.appendChild(div);
+      }
+    }
+    var txt=E('healthAnalysisText');
+    if(txt)txt.innerHTML='近 7 天平均補水 <b>'+avgW.toLocaleString()+' mL</b>，平均熱量 <b>'+avgC.toLocaleString()+' kcal</b>，排便共 <b>'+totalB+' 次</b>。目前每日補水目標為 <b>'+g.water.toLocaleString()+' mL</b>。';
+  }
+
+  function renderCalories(){
+    var d=D();if(!d)return;
+    var c=S('calorie'),g=G(),today=K(new Date()),food=0,drink=0;
+    (Array.isArray(d.foods)?d.foods:[]).forEach(function(x){if(K(R(x))===today)food+=N(x,['kcal','calories']);});
+    (Array.isArray(d.drinks)?d.drinks:[]).forEach(function(x){if(K(R(x))===today)drink+=N(x,['kcal','calories']);});
+    var total=food+drink,rate=g.cal?Math.round(total/g.cal*100):0;
+    [['calToday',total.toLocaleString()+' kcal'],['calGoal',g.cal?g.cal.toLocaleString():'—'],['calRemain',g.cal?Math.max(0,g.cal-total).toLocaleString():'—'],['calFood',food.toLocaleString()+' kcal'],['calDrink',drink.toLocaleString()+' kcal'],['calRate',rate+'%']].forEach(function(x){var e=E(x[0]);if(e)e.textContent=x[1];});
+    var fill=E('calProgressFill');if(fill)fill.style.width=Math.min(100,rate)+'%';
+
+    var canvas=E('calorieTrendChart');
+    if(canvas){
+      var box=canvas.parentElement;
+      canvas.style.display='none';
+      if(box){
+        var old=box.querySelector('.v412-cal');if(old)old.remove();
+        var div=document.createElement('div');div.className='v412-cal v412-chart';div.innerHTML=chart(c,'calorie',g.cal);
+        box.style.height='360px';box.appendChild(div);
+      }
+    }
+    var list=E('calorieRecordList');
+    if(list){
+      var rows=[];
+      (Array.isArray(d.foods)?d.foods:[]).forEach(function(x){if(K(R(x))===today)rows.push('<div class="record-row"><b>食物｜'+String(x.name||'未命名').replace(/[&<>"]/g,'')+'</b><span>'+N(x,['kcal','calories']).toLocaleString()+' kcal</span></div>');});
+      (Array.isArray(d.drinks)?d.drinks:[]).forEach(function(x){if(K(R(x))===today)rows.push('<div class="record-row"><b>飲品｜'+String(x.name||'未命名').replace(/[&<>"]/g,'')+'</b><span>'+N(x,['kcal','calories']).toLocaleString()+' kcal</span></div>');});
+      list.innerHTML=rows.length?rows.join(''):'<div class="empty">今日尚無熱量紀錄</div>';
+    }
+    var txt=E('calorieAnalysisText');
+    if(txt)txt.innerHTML=g.cal?'今日攝取 <b>'+total.toLocaleString()+' kcal</b>，達每日參考的 <b>'+rate+'%</b>。':'請先完成基本資料，以計算個人化熱量參考值。';
+  }
+
+  function refresh(){
+    var active=document.querySelector('.page.active');
+    if(!active)return;
+    if(active.id==='trends')renderTrends();
+    if(active.id==='calories')renderCalories();
+  }
+
+  /* 每次進入分析頁時強制重新渲染 */
+  document.addEventListener('click',function(){
+    setTimeout(refresh,50);
+    setTimeout(refresh,250);
+    setTimeout(refresh,600);
+  },true);
+  document.addEventListener('change',function(){setTimeout(refresh,100);},true);
+
+  function boot(){
+    [0,100,300,700].forEach(function(ms){setTimeout(refresh,ms);});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);
+  else boot();
+
+  window.refreshAnalysisPages=refresh;
 })();
 </script>
 
