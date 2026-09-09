@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v5.2</title>
+<title>健康管家 v5.4</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -1020,7 +1020,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 <aside class="sidebar">
 <div class="brand">
   <div class="brand-icon">💧</div>
-  <div>健康管家<small>v1.2.7</small></div>
+  <div>健康管家<small>v5.4</small></div>
 </div>
 <div class="sidebar-current-user" title="前往使用者管理">
   <span class="sidebar-user-dot">●</span>
@@ -1343,7 +1343,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 
 <section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" type="button" id="saveSalaryBtn">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v5.2</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v5.4</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
 
@@ -3311,7 +3311,8 @@ document.addEventListener('change',function(e){
     var rows=(Array.isArray(arr)?arr:[]).slice().sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});
     if(!rows.length){el.innerHTML='<div class="empty">尚無紀錄</div>';return;}
     el.innerHTML='<div class="record-list">'+rows.map(function(x){
-      var actions=id==='bowelTable'?'<div class="record-actions"><button type="button" class="record-edit" data-bowel-edit="'+String(x.id||'')+'">編輯</button><button type="button" class="record-delete" data-bowel-delete="'+String(x.id||'')+'">刪除</button></div>':'';
+      var map={waterTable:'water',drinkTable:'drink',foodTable:'food',bowelTable:'bowel',weightTable:'weight'};
+      var rt=map[id], actions=rt?'<div class="record-actions"><button type="button" class="record-edit v54-edit" data-record-type="'+rt+'" data-record-id="'+String(x.id||'')+'">編輯</button><button type="button" class="record-delete v54-delete" data-record-type="'+rt+'" data-record-id="'+String(x.id||'')+'">刪除</button></div>':'';
       return '<div class="record-row record-row-with-actions">'+formatter(x)+actions+'</div>';
     }).join('')+'</div>';
   }
@@ -5153,6 +5154,251 @@ document.addEventListener('change',function(e){
   else setTimeout(renderAll,300);
   document.addEventListener('click',function(){setTimeout(renderAll,180);},false);
   document.addEventListener('change',function(){setTimeout(renderAll,180);},false);
+})();
+</script>
+
+
+<style>
+/* ===== v5.3 財務記帳與快速紀錄同步 ===== */
+.v53-finance-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid #edf1f5}
+.v53-finance-row:last-child{border-bottom:0}
+.v53-finance-main{min-width:0;flex:1}
+.v53-finance-main b{display:block;font-size:13px}
+.v53-finance-main span{display:block;font-size:11px;color:#7b8996;margin-top:3px}
+.v53-finance-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.v53-finance-amount{font-size:16px;font-weight:900}
+.v53-income{color:#15956a}
+.v53-expense{color:#e34a4a}
+.v53-finance-actions{display:flex;gap:5px}
+.v53-finance-actions button{border:1px solid #dce5ed;background:#fff;border-radius:7px;padding:5px 9px;font-size:11px;cursor:pointer}
+.v53-finance-actions .edit{color:#2878d7}
+.v53-finance-actions .del{color:#d64a4a}
+.v53-finance-empty{text-align:center;padding:35px 12px;color:#8b98a5;font-size:12px}
+</style>
+<script>
+/* ===== v5.3：快速記錄收入／支出與財務記帳頁雙向同步 ===== */
+(function(){
+  'use strict';
+
+  function E(id){return document.getElementById(id);}
+  function D(){
+    try{
+      if(window.db&&typeof window.db==='object')return window.db;
+      if(typeof db!=='undefined'&&db&&typeof db==='object')return db;
+    }catch(e){}
+    return null;
+  }
+  function persist(){
+    try{if(typeof saveData==='function')saveData();else if(typeof saveCurrentDb==='function')saveCurrentDb();}catch(e){}
+    try{if(typeof render==='function')render();}catch(e){}
+  }
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+  function syncFinanceArrays(d){
+    d.finance=Array.isArray(d.finance)?d.finance:[];
+    d.income=Array.isArray(d.income)?d.income:[];
+    d.expense=Array.isArray(d.expense)?d.expense:[];
+
+    /* 舊資料可能只有 finance，補齊 income / expense */
+    d.finance.forEach(function(r){
+      var target=r.type==='income'?d.income:d.expense;
+      if(!target.some(function(x){return String(x.id)===String(r.id);}))target.push(r);
+    });
+    /* 快速紀錄可能只寫入 income / expense，補回 finance */
+    d.income.concat(d.expense).forEach(function(r){
+      if(!d.finance.some(function(x){return String(x.id)===String(r.id);})){
+        d.finance.push(r);
+      }
+    });
+  }
+
+  function formatDate(v){
+    var s=String(v||'');
+    return s?s.replace('T',' '):'—';
+  }
+
+  function renderFinancePage(type){
+    var id=type==='income'?'incomeTable':'expenseTable',el=E(id);if(!el)return;
+    var d=D();if(!d)return;
+    syncFinanceArrays(d);
+    var arr=(type==='income'?d.income:d.expense).filter(function(x){return x.type===type||!x.type;});
+    arr=arr.slice().sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});
+    if(!arr.length){el.innerHTML='<div class="v53-finance-empty">尚無'+(type==='income'?'收入':'支出')+'紀錄</div>';return;}
+    var total=arr.reduce(function(s,x){return s+Number(x.amount||0);},0);
+    el.innerHTML='<div class="v53-finance-total">本頁共 '+arr.length+' 筆｜合計 $'+total.toLocaleString()+'</div>'+
+      '<div class="v53-finance-list">'+arr.map(function(x){
+        return '<div class="v53-finance-row">'+
+          '<div class="v53-finance-main"><b>'+esc(x.name||'記帳')+'</b><span>'+esc(x.category||'')+'　'+formatDate(x.date)+(x.note?'　'+esc(x.note):'')+'</span></div>'+
+          '<div class="v53-finance-right"><strong class="v53-finance-amount '+(type==='income'?'v53-income':'v53-expense')+'">'+(type==='income'?'+':'-')+' $'+Number(x.amount||0).toLocaleString()+'</strong>'+
+          '<div class="v53-finance-actions"><button class="edit" type="button" data-v53-fin-edit="'+type+'" data-id="'+esc(x.id)+'">編輯</button><button class="del" type="button" data-v53-fin-del="'+type+'" data-id="'+esc(x.id)+'">刪除</button></div></div></div>';
+      }).join('')+'</div>';
+  }
+
+  function editFinance(type,id){
+    var d=D();if(!d)return;
+    syncFinanceArrays(d);
+    var arr=type==='income'?d.income:d.expense;
+    var x=arr.find(function(r){return String(r.id)===String(id);});
+    if(!x){alert('找不到這筆財務紀錄');return;}
+    var cats=type==='income'?['薪資','獎金','其他收入']:['飲食','刷卡','交通','家庭生活費','娛樂','投資','醫療','生活日用品','其他'];
+    var opts=cats.map(function(c){return '<option '+(c===x.category?'selected':'')+'>'+c+'</option>';}).join('');
+    var box=E('modalBox'),m=E('modal');if(!box||!m)return;
+    box.innerHTML='<h2>編輯'+(type==='income'?'收入':'支出')+'</h2>'+
+      '<label>項目名稱<input id="v53FinName" value="'+esc(x.name||'')+'"></label>'+
+      '<label>分類<select id="v53FinCat">'+opts+'</select></label>'+
+      '<label>金額（元）<input id="v53FinAmount" type="number" min="0" step="1" value="'+Number(x.amount||0)+'"></label>'+
+      '<label>日期<input id="v53FinDate" type="date" value="'+esc(String(x.date||'').slice(0,10))+'"></label>'+
+      '<label>備註<textarea id="v53FinNote">'+esc(x.note||'')+'</textarea></label>'+
+      '<div class="modal-actions"><button type="button" class="secondary" id="v53FinCancel">取消</button><button type="button" class="primary" id="v53FinSave">儲存修改</button></div>';
+    m.classList.add('show');
+    E('v53FinCancel').onclick=function(){m.classList.remove('show');};
+    E('v53FinSave').onclick=function(){
+      var name=(E('v53FinName').value||'').trim(),amount=Number(E('v53FinAmount').value);
+      if(!name||amount<0){alert('請填寫項目名稱與有效金額');return;}
+      x.name=name;x.category=E('v53FinCat').value;x.amount=amount;x.date=E('v53FinDate').value;x.note=E('v53FinNote').value;x.type=type;
+      /* finance / income / expense 皆以相同 id 同步 */
+      d.finance=d.finance.map(function(r){return String(r.id)===String(id)?x:r;});
+      d.income=d.income.map(function(r){return String(r.id)===String(id)?x:r;});
+      d.expense=d.expense.map(function(r){return String(r.id)===String(id)?x:r;});
+      persist();m.classList.remove('show');setTimeout(renderFinancePages,80);
+    };
+  }
+
+  function deleteFinance(type,id){
+    var d=D();if(!d)return;
+    syncFinanceArrays(d);
+    if(!confirm('確定要刪除這筆'+(type==='income'?'收入':'支出')+'紀錄嗎？'))return;
+    ['finance','income','expense'].forEach(function(k){
+      d[k]=(d[k]||[]).filter(function(r){return String(r.id)!==String(id);});
+    });
+    persist();setTimeout(renderFinancePages,80);
+  }
+
+  function renderFinancePages(){
+    renderFinancePage('income');
+    renderFinancePage('expense');
+  }
+
+  /* 快速紀錄新增後，讓財務頁立即取得最新資料 */
+  var oldFinance=window.financeModal;
+  if(typeof oldFinance==='function'&&!oldFinance.__v53){
+    var wrapped=function(type){
+      return oldFinance.apply(this,arguments);
+    };
+    wrapped.__v53=true;
+    window.financeModal=wrapped;
+  }
+
+  document.addEventListener('click',function(e){
+    var edit=e.target.closest('[data-v53-fin-edit]');
+    if(edit){e.preventDefault();e.stopImmediatePropagation();editFinance(edit.getAttribute('data-v53-fin-edit'),edit.getAttribute('data-id'));return;}
+    var del=e.target.closest('[data-v53-fin-del]');
+    if(del){e.preventDefault();e.stopImmediatePropagation();deleteFinance(del.getAttribute('data-v53-fin-del'),del.getAttribute('data-id'));return;}
+    setTimeout(renderFinancePages,120);
+  },true);
+
+  document.addEventListener('change',function(){setTimeout(renderFinancePages,150);},true);
+
+  function boot(){renderFinancePages();[150,400,800].forEach(function(ms){setTimeout(renderFinancePages,ms);});}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+  window.renderFinancePagesV53=renderFinancePages;
+})();
+</script>
+
+
+<style>
+/* ===== v5.4 補水紀錄列表同步顯示 ===== */
+.record-row-with-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.record-row-with-actions>.record-actions{margin-left:auto;display:flex;gap:6px;flex-shrink:0}
+.record-actions button{border:1px solid #dce5ed;background:#fff;border-radius:7px;padding:5px 9px;font-size:11px;cursor:pointer}
+.record-actions .record-edit{color:#2878d7}
+.record-actions .record-delete{color:#d64a4a}
+@media(max-width:600px){.record-row-with-actions{align-items:flex-start}.record-actions button{padding:5px 8px}}
+</style>
+<script>
+/* ===== v5.4：修正 renderTable 被舊版 refreshAll 重繪後，補水等頁面失去編輯／刪除按鈕 ===== */
+(function(){
+  'use strict';
+  function D(id){return document.getElementById(id);}
+  function db(){
+    try{
+      if(window.db&&typeof window.db==='object')return window.db;
+      if(typeof dbRef==='function')return dbRef();
+      if(typeof window.current==='function')return window.current();
+    }catch(e){}
+    return null;
+  }
+  function persist(){
+    try{if(typeof saveData==='function')saveData();else if(typeof saveCurrentDb==='function')saveCurrentDb();}catch(e){}
+    try{if(typeof render==='function')render();}catch(e){}
+    try{if(typeof refreshAll==='function')refreshAll();}catch(e){}
+    try{if(typeof refreshAnalysisPages==='function')refreshAnalysisPages();}catch(e){}
+  }
+  function close(){var m=D('modal');if(m)m.classList.remove('show');}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function field(id){var e=D(id);return e?e.value:'';}
+  function dateVal(x){
+    var s=String(x&&x.date||'');
+    if(!s)return new Date().toISOString().slice(0,16);
+    if(s.indexOf('T')>=0)return s.slice(0,16);
+    return s.slice(0,10)+'T00:00';
+  }
+  function modal(title,body,saveFn){
+    var m=D('modal'),b=D('modalBox');if(!m||!b)return;
+    b.innerHTML='<h2>'+esc(title)+'</h2>'+body+
+      '<div class="modal-actions"><button type="button" class="secondary" id="v54Cancel">取消</button><button type="button" class="primary" id="v54Save">儲存修改</button></div>';
+    m.classList.add('show');
+    D('v54Cancel').onclick=close;
+    D('v54Save').onclick=function(){if(saveFn()!==false)close();};
+  }
+  function find(type,id){
+    var d=db(),map={water:'water',drink:'drinks',food:'foods',bowel:'bowel',weight:'weights'},k=map[type];
+    if(!d||!Array.isArray(d[k]))return null;
+    return {d:d,k:k,a:d[k],x:d[k].find(function(r){return String(r.id)===String(id);})};
+  }
+
+  function edit(type,id){
+    var f=find(type,id);if(!f||!f.x){alert('找不到這筆紀錄');return;}
+    var x=f.x;
+    if(type==='water'){
+      modal('編輯補水紀錄','<label>日期與時間<input id="v54Date" type="datetime-local" value="'+dateVal(x)+'"></label><label>補水量（mL）<input id="v54Ml" type="number" min="1" step="50" value="'+Number(x.ml||x.amount||x.value||x.volume||0)+'"></label>',function(){
+        var ml=Number(field('v54Ml'));if(!ml){alert('請輸入補水量');return false;}
+        x.ml=ml;x.date=field('v54Date');persist();
+      });
+    }else if(type==='drink'){
+      var opts=['白開水','無糖茶','含糖茶','咖啡','奶類飲品','其他'].map(function(c){return '<option '+(c===x.type?'selected':'')+'>'+c+'</option>';}).join('');
+      modal('編輯飲品紀錄','<label>日期與時間<input id="v54Date" type="datetime-local" value="'+dateVal(x)+'"></label><label>飲品名稱<input id="v54Name" value="'+esc(x.name||'')+'"></label><label>飲品類型<select id="v54Type">'+opts+'</select></label><label>液體量（mL）<input id="v54Ml" type="number" min="1" value="'+Number(x.ml||0)+'"></label><label>熱量（kcal）<input id="v54Kcal" type="number" min="0" value="'+Number(x.kcal||0)+'"></label>',function(){
+        var ml=Number(field('v54Ml'));if(!ml){alert('請輸入飲品容量');return false;}
+        x.date=field('v54Date');x.name=field('v54Name')||'飲品';x.type=field('v54Type');x.ml=ml;x.kcal=Number(field('v54Kcal')||0);persist();
+      });
+    }else if(type==='food'){
+      modal('編輯食物紀錄','<label>日期與時間<input id="v54Date" type="datetime-local" value="'+dateVal(x)+'"></label><label>食物名稱<input id="v54Name" value="'+esc(x.name||'')+'"></label><label>份量<input id="v54Portion" value="'+esc(x.portion||'')+'"></label><label>熱量（kcal）<input id="v54Kcal" type="number" min="0" value="'+Number(x.kcal||0)+'"></label><label>價格（元）<input id="v54Price" type="number" min="0" value="'+Number(x.price||0)+'"></label><label>備註<textarea id="v54Note">'+esc(x.note||'')+'</textarea></label>',function(){
+        if(!field('v54Name').trim()){alert('請輸入食物名稱');return false;}
+        x.date=field('v54Date');x.name=field('v54Name').trim();x.portion=field('v54Portion');x.kcal=Number(field('v54Kcal')||0);x.price=Number(field('v54Price')||0);x.note=field('v54Note');persist();
+      });
+    }else if(type==='weight'){
+      modal('編輯體重紀錄','<label>日期與時間<input id="v54Date" type="datetime-local" value="'+dateVal(x)+'"></label><label>體重（kg）<input id="v54Weight" type="number" min="1" step=".1" value="'+Number(x.weight||x.kg||x.value||0)+'"></label><label>備註<input id="v54Note" value="'+esc(x.note||'')+'"></label>',function(){
+        var w=Number(field('v54Weight'));if(!w){alert('請輸入體重');return false;}
+        x.date=field('v54Date');x.weight=w;x.note=field('v54Note');f.d.profile=f.d.profile||{};f.d.profile.weight=w;persist();
+      });
+    }else if(type==='bowel'&&typeof editBowel==='function'){
+      editBowel(id);
+    }
+  }
+
+  function del(type,id){
+    var f=find(type,id);if(!f||!f.x)return;
+    var names={water:'補水',drink:'飲品',food:'食物',bowel:'排便',weight:'體重'};
+    if(!confirm('確定要刪除這筆'+names[type]+'紀錄嗎？'))return;
+    f.a.splice(f.a.indexOf(f.x),1);persist();
+  }
+
+  document.addEventListener('click',function(e){
+    var a=e.target.closest('.v54-edit');
+    if(a){e.preventDefault();e.stopImmediatePropagation();edit(a.getAttribute('data-record-type'),a.getAttribute('data-record-id'));return;}
+    var b=e.target.closest('.v54-delete');
+    if(b){e.preventDefault();e.stopImmediatePropagation();del(b.getAttribute('data-record-type'),b.getAttribute('data-record-id'));return;}
+  },true);
 })();
 </script>
 
