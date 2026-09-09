@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v3.7</title>
+<title>健康管家 v4</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -1291,7 +1291,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 </section>
 <section id="salary" class="page"><div class="card"><h2>發薪日設定</h2><label>每月發薪日<input id="salaryInput" type="number" min="1" max="28"></label><div id="salaryPreview" class="tip"></div><div class="modal-actions"><button class="primary" type="button" id="saveSalaryBtn">儲存設定</button></div></div></section>
 <section id="reminder" class="page"><div class="card"><h2>提醒設定</h2><p>提醒功能保留於此版本的設定頁。</p></div></section>
-<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v3.8</p></div></section>
+<section id="about" class="page"><div class="card"><h2>關於我們</h2><p>健康管家 v4.0</p></div></section>
 </main></div>
 <div id="modal" class="modal"><div class="modal-box" id="modalBox"></div></div><div id="toast" class="toast"></div>
 
@@ -2182,6 +2182,581 @@ document.addEventListener('change',function(e){
   }else{
     bind();
   }
+})();
+</script>
+
+
+<script>
+/* ===== v3.9 個人化計算與發薪日最終修復 =====
+   本版以目前頁面真正使用的全域 db 為準，重新接管：
+   1. 基本資料儲存
+   2. 補水目標（體重 × 32 mL/kg，四捨五入至 50 mL，最低 1500）
+   3. 每日熱量參考（Mifflin-St Jeor + 活動係數，四捨五入至 50）
+   4. 發薪日儲存與側邊欄記帳週期
+   5. 使用者切換後重新計算個人化數值
+*/
+(function(){
+  'use strict';
+
+  function getDB(){
+    return (typeof db!=='undefined' && db && typeof db==='object') ? db : null;
+  }
+  function userId(){
+    try{
+      return typeof getCurrentUserId==='function' ? getCurrentUserId() : localStorage.getItem('health_manager_current_user');
+    }catch(e){return null;}
+  }
+  function saveDB(){
+    var d=getDB(), id=userId();
+    if(!d || !id)return false;
+    try{
+      localStorage.setItem('health_manager_profile_'+id,JSON.stringify(d));
+      localStorage.setItem('health_manager_v122_final',JSON.stringify(d));
+      return true;
+    }catch(e){
+      console.error('v3.9 saveDB',e);
+      return false;
+    }
+  }
+  function toastMsg(msg){
+    if(typeof toast==='function'){toast(msg);return;}
+    var t=document.getElementById('toast');
+    if(t){t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},1800);}
+  }
+
+  function round50(n){
+    return Math.round(n/50)*50;
+  }
+
+  function waterTarget(){
+    var d=getDB(), w=Number(d && d.profile && d.profile.weight || 0);
+    if(!w)return 1500;
+    return Math.max(1500,round50(w*32));
+  }
+
+  function calorieTarget(){
+    var d=getDB(), p=d && d.profile || {};
+    var w=Number(p.weight||0), h=Number(p.height||0), a=Number(p.age||0);
+    if(!w || !h || !a)return 0;
+
+    var bmr;
+    if(p.sex==='male') bmr=10*w+6.25*h-5*a+5;
+    else if(p.sex==='female') bmr=10*w+6.25*h-5*a-161;
+    else bmr=10*w+6.25*h-5*a-78;
+
+    var factor={sedentary:1.2,normal:1.375,active:1.55}[p.activity] || 1.375;
+    return Math.max(0,round50(bmr*factor));
+  }
+
+  function dateKey(date){
+    var d=date||new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+
+  function todayWater(){
+    var d=getDB();
+    return (d&&Array.isArray(d.water)?d.water:[]).filter(function(x){
+      return dateKey(new Date(x.date||x.time||x.createdAt||0))===dateKey();
+    }).reduce(function(sum,x){return sum+Number(x.ml||x.amount||x.value||0);},0);
+  }
+
+  function todayCalories(){
+    var d=getDB(), total=0;
+    (d&&Array.isArray(d.foods)?d.foods:[]).forEach(function(x){
+      if(dateKey(new Date(x.date||x.time||x.createdAt||0))===dateKey()) total+=Number(x.kcal||x.calories||0);
+    });
+    (d&&Array.isArray(d.drinks)?d.drinks:[]).forEach(function(x){
+      if(dateKey(new Date(x.date||x.time||x.createdAt||0))===dateKey()) total+=Number(x.kcal||x.calories||0);
+    });
+    return total;
+  }
+
+  function periodData(){
+    var d=getDB(), day=Math.min(28,Math.max(1,Number(d&&d.salaryDay||5)));
+    var now=new Date();
+    var s=new Date(now.getFullYear(),now.getMonth(),day);
+    if(now<s)s=new Date(now.getFullYear(),now.getMonth()-1,day);
+    var e=new Date(s.getFullYear(),s.getMonth()+1,day-1,23,59,59);
+    return {s:s,e:e};
+  }
+
+  function fmtDate(d){
+    return String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
+  }
+
+  function updatePersonalizedUI(){
+    var wt=waterTarget(), ct=calorieTarget();
+    var w=todayWater(), c=todayCalories();
+
+    var ids={
+      waterHeroGoal:wt.toLocaleString(),
+      waterHero:w.toLocaleString(),
+      calHeroGoal:ct?ct.toLocaleString():'—',
+      calHero:c.toLocaleString(),
+      calGoal:ct?ct.toLocaleString():'—',
+      calToday:c.toLocaleString()+' kcal',
+      calFood:'0 kcal',
+      calDrink:'0 kcal'
+    };
+
+    Object.keys(ids).forEach(function(id){
+      var el=document.getElementById(id);
+      if(el)el.textContent=ids[id];
+    });
+
+    var wp=document.getElementById('waterHeroBar');
+    if(wp)wp.style.width=(wt?Math.min(100,w/wt*100):0)+'%';
+    var wr=document.getElementById('waterRemain');
+    if(wr)wr.textContent=w>=wt?'已達成目標':'剩餘 '+Math.max(0,wt-w).toLocaleString()+' mL';
+
+    var cp=document.getElementById('calHeroBar');
+    if(cp)cp.style.width=(ct?Math.min(100,c/ct*100):0)+'%';
+    var cr=document.getElementById('calRemain');
+    if(cr)cr.textContent=ct?Math.max(0,ct-c).toLocaleString():'—';
+
+    var rate=document.getElementById('calRate');
+    var fill=document.getElementById('calProgressFill');
+    if(rate)rate.textContent=(ct?Math.round(c/ct*100):0)+'%';
+    if(fill)fill.style.width=(ct?Math.min(100,c/ct*100):0)+'%';
+
+    var p=periodData(), text=fmtDate(p.s)+' ～ '+fmtDate(p.e);
+    ['sidePeriod','financePeriod','financePeriod2'].forEach(function(id){
+      var el=document.getElementById(id);if(el)el.textContent=text;
+    });
+    var remain=document.getElementById('sideRemain');
+    if(remain){
+      var now=new Date();
+      remain.textContent='尚餘 '+Math.max(0,Math.ceil((p.e-now)/86400000))+' 天';
+    }
+    var sl=document.getElementById('salaryDayLabel');
+    if(sl)sl.textContent=String(getDB().salaryDay||5);
+  }
+
+  /* 最終覆蓋基本資料儲存 */
+  window.saveProfile=function(){
+    var d=getDB();
+    if(!d)return false;
+
+    var x={
+      height:Number(document.getElementById('ph')?.value||0),
+      weight:Number(document.getElementById('pw')?.value||0),
+      age:Number(document.getElementById('pa')?.value||0),
+      sex:document.getElementById('ps')?.value||'',
+      activity:document.getElementById('pac')?.value||'normal'
+    };
+    if(!x.height||!x.weight||!x.age){
+      toastMsg('請填寫身高、體重與年齡');
+      return false;
+    }
+
+    d.profile=x;
+    saveDB();
+    updatePersonalizedUI();
+
+    var preview=document.getElementById('profilePreview');
+    if(preview){
+      var bmi=x.weight/Math.pow(x.height/100,2);
+      preview.textContent='BMI 約 '+bmi.toFixed(1)+'　｜　補水目標 '+waterTarget().toLocaleString()+' mL／日　｜　每日熱量參考 '+(calorieTarget()?calorieTarget().toLocaleString()+' kcal':'—');
+    }
+    toastMsg('基本資料已儲存，水量與熱量目標已更新');
+    return true;
+  };
+
+  window.loadProfile=function(){
+    var d=getDB(), p=d&&d.profile||{};
+    var map={ph:p.height||'',pw:p.weight||'',pa:p.age||''};
+    Object.keys(map).forEach(function(id){
+      var el=document.getElementById(id);if(el)el.value=map[id];
+    });
+    var ps=document.getElementById('ps');if(ps)ps.value=p.sex||'';
+    var pac=document.getElementById('pac');if(pac)pac.value=p.activity||'normal';
+    var preview=document.getElementById('profilePreview');
+    if(preview && p.height&&p.weight&&p.age){
+      var bmi=p.weight/Math.pow(p.height/100,2);
+      preview.textContent='BMI 約 '+bmi.toFixed(1)+'　｜　補水目標 '+waterTarget().toLocaleString()+' mL／日　｜　每日熱量參考 '+(calorieTarget()?calorieTarget().toLocaleString()+' kcal':'—');
+    }else if(preview)preview.textContent='';
+    updatePersonalizedUI();
+  };
+
+  /* 最終覆蓋發薪日儲存 */
+  window.saveSalary=function(){
+    var d=getDB();
+    var input=document.getElementById('salaryInput');
+    if(!d||!input){toastMsg('找不到發薪日設定欄位');return false;}
+    var n=parseInt(input.value,10);
+    if(!Number.isFinite(n))n=5;
+    n=Math.min(28,Math.max(1,n));
+    d.salaryDay=n;
+    saveDB();
+
+    var p=periodData(), text=fmtDate(p.s)+' ～ '+fmtDate(p.e);
+    var label=document.getElementById('salaryDayLabel');if(label)label.textContent=String(n);
+    var preview=document.getElementById('salaryPreview');if(preview)preview.textContent='目前設定：每月 '+n+' 日｜本期：'+text;
+    updatePersonalizedUI();
+    toastMsg('發薪日已儲存為每月 '+n+' 日');
+    return true;
+  };
+
+  window.loadSalary=function(){
+    var d=getDB(), n=Number(d&&d.salaryDay||5);
+    var input=document.getElementById('salaryInput');if(input)input.value=String(n);
+    var p=periodData(), text=fmtDate(p.s)+' ～ '+fmtDate(p.e);
+    var preview=document.getElementById('salaryPreview');if(preview)preview.textContent='目前設定：每月 '+n+' 日｜本期：'+text;
+    updatePersonalizedUI();
+  };
+
+  /* 使用者切換後一定重新載入個人資料並重算 */
+  var originalSwitch=window.switchUser;
+  window.switchUser=function(id){
+    try{
+      if(originalSwitch) originalSwitch(id);
+      if(typeof loadUserData==='function')loadUserData(id);
+      if(typeof loadProfile==='function')loadProfile();
+      updatePersonalizedUI();
+      if(typeof renderUserSwitcher==='function')renderUserSwitcher();
+      return true;
+    }catch(e){
+      console.error('v3.9 switchUser',e);
+      return false;
+    }
+  };
+
+  /* 直接綁定目前畫面真正存在的儲存按鈕，避免舊版事件覆蓋 */
+  function bind(){
+    var sb=document.getElementById('saveSalaryBtn');
+    if(sb && !sb.__v39){
+      sb.__v39=true;
+      sb.onclick=function(e){e.preventDefault();window.saveSalary();};
+    }
+
+    var pb=document.querySelector('#profile .profile-actions .primary');
+    if(pb && !pb.__v39){
+      pb.__v39=true;
+      pb.onclick=function(e){e.preventDefault();window.saveProfile();};
+    }
+
+    var us=document.getElementById('userSelect');
+    if(us && !us.__v39){
+      us.__v39=true;
+      us.onchange=function(){window.switchUser(this.value);};
+    }
+
+    updatePersonalizedUI();
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);
+  else bind();
+})();
+</script>
+
+
+<style>
+/* ===== v4.0 7日健康趨勢：真實紀錄曲線＋數據標記 ===== */
+.trend-mini-chart{
+  position:relative;
+  width:100%;
+  height:112px;
+  margin-top:4px;
+  overflow:visible;
+}
+.trend-mini-chart svg{
+  width:100%;
+  height:100%;
+  display:block;
+  overflow:visible;
+}
+.trend-mini-chart .grid-line{
+  stroke:#e9eef3;
+  stroke-width:1;
+}
+.trend-mini-chart .trend-line{
+  fill:none;
+  stroke-width:2.4;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.trend-mini-chart .trend-area{opacity:.12}
+.trend-mini-chart .trend-point{
+  stroke:#fff;
+  stroke-width:1.8;
+}
+.trend-mini-chart .trend-value{
+  font-size:8px;
+  font-weight:900;
+  fill:#40536a;
+}
+.trend-mini-chart .trend-day{
+  font-size:7px;
+  fill:#8793a1;
+}
+.trend-mini-chart .trend-zero{
+  font-size:9px;
+  fill:#a0aab5;
+  text-anchor:middle;
+}
+.trend-data-note{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-top:4px;
+  font-size:8px;
+  color:#8793a1;
+}
+.trend-data-note b{color:#536579;font-weight:900}
+</style>
+
+<script>
+/* ===== v4.0 真實資料 7 日趨勢 ===== */
+(function(){
+  'use strict';
+
+  function currentDB(){
+    try{return (typeof db!=='undefined' && db) ? db : null;}catch(e){return null;}
+  }
+
+  function dayKey(d){
+    d=new Date(d);
+    if(isNaN(d))return '';
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+
+  function dayLabel(d){
+    return (d.getMonth()+1)+'/'+d.getDate();
+  }
+
+  function recordDate(x){
+    if(!x)return null;
+    var v=x.date || x.datetime || x.time || x.createdAt || x.timestamp;
+    if(!v)return null;
+    var d=new Date(v);
+    return isNaN(d)?null:d;
+  }
+
+  function num(x,keys){
+    for(var i=0;i<keys.length;i++){
+      var v=Number(x && x[keys[i]]);
+      if(Number.isFinite(v))return v;
+    }
+    return 0;
+  }
+
+  function days7(){
+    var arr=[], now=new Date();
+    now.setHours(0,0,0,0);
+    for(var i=6;i>=0;i--){
+      var d=new Date(now);
+      d.setDate(now.getDate()-i);
+      arr.push({date:d,key:dayKey(d),label:dayLabel(d)});
+    }
+    return arr;
+  }
+
+  function valuesFor(type){
+    var d=currentDB()||{}, days=days7();
+    var out=days.map(function(x){return {label:x.label,key:x.key,value:0};});
+
+    if(type==='water'){
+      (Array.isArray(d.water)?d.water:[]).forEach(function(x){
+        var k=dayKey(recordDate(x)); if(!k)return;
+        var row=out.find(function(r){return r.key===k;});
+        if(row)row.value+=num(x,['ml','amount','value','volume']);
+      });
+    }
+
+    if(type==='calorie'){
+      (Array.isArray(d.foods)?d.foods:[]).forEach(function(x){
+        var k=dayKey(recordDate(x)); if(!k)return;
+        var row=out.find(function(r){return r.key===k;});
+        if(row)row.value+=num(x,['kcal','calories']);
+      });
+      (Array.isArray(d.drinks)?d.drinks:[]).forEach(function(x){
+        var k=dayKey(recordDate(x)); if(!k)return;
+        var row=out.find(function(r){return r.key===k;});
+        if(row)row.value+=num(x,['kcal','calories']);
+      });
+    }
+
+    if(type==='bowel'){
+      (Array.isArray(d.bowel)?d.bowel:[]).forEach(function(x){
+        var k=dayKey(recordDate(x)); if(!k)return;
+        var row=out.find(function(r){return r.key===k;});
+        if(row)row.value+=1;
+      });
+    }
+
+    if(type==='weight'){
+      /* 每天取最後一次體重紀錄 */
+      (Array.isArray(d.weights)?d.weights:[]).forEach(function(x){
+        var k=dayKey(recordDate(x)); if(!k)return;
+        var row=out.find(function(r){return r.key===k;});
+        if(row)row.value=num(x,['weight','kg','value']);
+      });
+    }
+
+    return out;
+  }
+
+  function esc(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function makeSVG(rows,unit,kind){
+    var w=620,h=112,left=12,right=10,top=18,bottom=20;
+    var pw=w-left-right, ph=h-top-bottom;
+    var vals=rows.map(function(r){return Number(r.value)||0;});
+    var max=Math.max.apply(null,vals.concat([1]));
+    if(kind==='water')max=Math.max(max,1500);
+    if(kind==='calorie')max=Math.max(max,2000);
+    if(kind==='weight')max=Math.max(max,Math.ceil(max/5)*5||5);
+
+    var points=rows.map(function(r,i){
+      var x=left+(pw*i/(rows.length-1));
+      var y=top+ph-(r.value/max*ph);
+      return {x:x,y:y,v:r.value,label:r.label};
+    });
+
+    var poly=points.map(function(p){return p.x.toFixed(1)+','+p.y.toFixed(1);}).join(' ');
+    var area=left+','+(top+ph)+' '+poly+' '+(left+pw)+','+(top+ph);
+
+    var grid='';
+    [0,.5,1].forEach(function(t){
+      var y=top+ph-(ph*t);
+      grid+='<line class="grid-line" x1="'+left+'" y1="'+y+'" x2="'+(left+pw)+'" y2="'+y+'"></line>';
+    });
+
+    var labels='';
+    points.forEach(function(p,i){
+      var text=kind==='weight' ? p.v.toFixed(1) : Math.round(p.v).toLocaleString();
+      if(p.v===0)text='0';
+      var anchor=i===0?'start':(i===points.length-1?'end':'middle');
+      var tx=p.x;
+      if(i===0)tx+=2;
+      if(i===points.length-1)tx-=2;
+      labels+='<circle class="trend-point" cx="'+p.x+'" cy="'+p.y+'" r="3.2"></circle>';
+      labels+='<text class="trend-value" x="'+tx+'" y="'+Math.max(10,p.y-7)+'" text-anchor="'+anchor+'">'+esc(text)+'</text>';
+      labels+='<text class="trend-day" x="'+p.x+'" y="'+(h-4)+'" text-anchor="'+anchor+'">'+esc(p.label)+'</text>';
+    });
+
+    var stroke={water:'#2688d9',calorie:'#e28a3b',weight:'#2db77d',bowel:'#7855c9'}[kind]||'#2688d9';
+    return '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" aria-label="7日'+unit+'趨勢">'
+      +grid
+      +'<polygon class="trend-area" fill="'+stroke+'" points="'+area+'"></polygon>'
+      +'<polyline class="trend-line" stroke="'+stroke+'" points="'+poly+'"></polyline>'
+      +labels
+      +'</svg>';
+  }
+
+  function renderMini(id,type,unit){
+    var el=document.getElementById(id);
+    if(!el)return;
+    var rows=valuesFor(type);
+    var total=rows.reduce(function(s,r){return s+r.value;},0);
+    el.innerHTML='<div class="trend-mini-chart">'+makeSVG(rows,unit,type)+'</div>'
+      +'<div class="trend-data-note"><span>6 天前</span><b>7 日資料</b><span>今天</span></div>';
+  }
+
+  function renderDashboardTrends(){
+    renderMini('waterChart','water','補水');
+    renderMini('calChart','calorie','熱量');
+    renderMini('weightChart','weight','體重');
+    renderMini('bowelChart','bowel','排便');
+  }
+
+  function renderTrendPage(){
+    var canvas=document.getElementById('healthTrendChart');
+    if(!canvas)return;
+    var box=canvas.parentElement;
+    if(!box)return;
+
+    var wrap=box.querySelector('.v40-health-trend');
+    if(!wrap){
+      wrap=document.createElement('div');
+      wrap.className='v40-health-trend';
+      wrap.style.width='100%';
+      wrap.style.height='100%';
+      box.replaceChild(wrap,canvas);
+    }
+
+    var w=valuesFor('water'), c=valuesFor('calorie');
+    var rows=w.map(function(r,i){return {label:r.label,key:r.key,value:r.value,cal:c[i].value};});
+    var width=760,height=255,left=42,right=18,top=26,bottom=28;
+    var pw=width-left-right,ph=height-top-bottom;
+    var max=Math.max(1,Math.max.apply(null,rows.map(function(r){return r.value;})),Math.max.apply(null,rows.map(function(r){return r.cal;})));
+    var pointsW=[],pointsC=[];
+    rows.forEach(function(r,i){
+      var x=left+pw*i/(rows.length-1);
+      pointsW.push({x:x,y:top+ph-r.value/max*ph,v:r.value,label:r.label});
+      pointsC.push({x:x,y:top+ph-r.cal/max*ph,v:r.cal,label:r.label});
+    });
+    function line(ps){return ps.map(function(p){return p.x+','+p.y;}).join(' ');}
+    var s='<svg viewBox="0 0 '+width+' '+height+'" preserveAspectRatio="none" style="width:100%;height:100%;overflow:visible">';
+    [0,.25,.5,.75,1].forEach(function(t){
+      var y=top+ph-ph*t;
+      s+='<line x1="'+left+'" y1="'+y+'" x2="'+(width-right)+'" y2="'+y+'" stroke="#e8edf2" stroke-width="1"/>';
+    });
+    s+='<polyline points="'+line(pointsW)+'" fill="none" stroke="#2688d9" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+    s+='<polyline points="'+line(pointsC)+'" fill="none" stroke="#e28a3b" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+    pointsW.forEach(function(p,i){
+      var lab=Math.round(p.v).toLocaleString();
+      s+='<circle cx="'+p.x+'" cy="'+p.y+'" r="4" fill="#2688d9" stroke="#fff" stroke-width="2"/>';
+      s+='<text x="'+p.x+'" y="'+Math.max(13,p.y-9)+'" text-anchor="middle" font-size="8" font-weight="900" fill="#2688d9">'+lab+'</text>';
+      s+='<text x="'+p.x+'" y="'+(height-7)+'" text-anchor="middle" font-size="8" fill="#8793a1">'+esc(p.label)+'</text>';
+    });
+    pointsC.forEach(function(p){
+      var lab=Math.round(p.v).toLocaleString();
+      s+='<circle cx="'+p.x+'" cy="'+p.y+'" r="3.5" fill="#e28a3b" stroke="#fff" stroke-width="2"/>';
+      s+='<text x="'+p.x+'" y="'+Math.min(height-18,p.y+14)+'" text-anchor="middle" font-size="8" font-weight="900" fill="#c8782f">'+lab+'</text>';
+    });
+    s+='</svg>';
+    wrap.innerHTML=s;
+  }
+
+  window.renderV40HealthTrends=function(){
+    renderDashboardTrends();
+    renderTrendPage();
+
+    /* 同步健康趨勢摘要數字 */
+    var w=valuesFor('water'), c=valuesFor('calorie'), b=valuesFor('bowel');
+    var avgW=Math.round(w.reduce(function(s,r){return s+r.value;},0)/7);
+    var avgC=Math.round(c.reduce(function(s,r){return s+r.value;},0)/7);
+    var bc=b.reduce(function(s,r){return s+r.value;},0);
+    var wt=valuesFor('weight').filter(function(r){return r.value>0;});
+    var wc=wt.length>=2 ? wt[wt.length-1].value-wt[0].value : null;
+    var ids={
+      trendWaterAvg:avgW.toLocaleString(),
+      trendCalAvg:avgC.toLocaleString(),
+      trendBowelCount:String(bc),
+      trendWeightChange:wc===null?'—':((wc>0?'+':'')+wc.toFixed(1)+' kg')
+    };
+    Object.keys(ids).forEach(function(id){
+      var el=document.getElementById(id);if(el)el.textContent=ids[id];
+    });
+  };
+
+  function boot(){
+    try{window.renderV40HealthTrends();}catch(e){console.error('v4.0 trend render',e);}
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);
+  else boot();
+
+  window.addEventListener('resize',function(){
+    clearTimeout(window.__v40TrendResize);
+    window.__v40TrendResize=setTimeout(boot,120);
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+  function refresh(){if(typeof window.renderV40HealthTrends==='function')window.renderV40HealthTrends();}
+  document.addEventListener('click',function(){
+    setTimeout(refresh,180);
+  });
+  document.addEventListener('change',function(){
+    setTimeout(refresh,180);
+  });
 })();
 </script>
 
