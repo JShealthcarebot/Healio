@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康管家 v3.7</title>
+<title>健康管家 v4.5</title>
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}:root{--nav:#082b4d;--blue:#2d83f7;--orange:#ff8a16;--green:#2db77d;--purple:#7855c9;--red:#e85d5d;--ink:#14233b;--muted:#718095;--line:#e5ebf1;--bg:#f7f9fc;--white:#fff}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -1025,6 +1025,107 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans
 </aside>
 
 <main class="main">
+<section id="dashboard" class="page active">
+<div class="top"><div class="greeting">早安！健康管家陪你一起記錄每一天 💪</div><div><span class="current-user-top" id="topCurrentUser">👤 使用者 1</span><span class="date" id="todayText"></span></div></div>
+<div class="section-title">快速記錄</div><div class="quick">
+<button class="qwater" onclick="waterModal()"><span class="qicon">💧</span><span class="qname">補水</span><span class="qsub">自訂輸入 mL</span></button>
+<button class="qdrink" onclick="drinkModal()"><span class="qicon">🥤</span><span class="qname">飲品</span><span class="qsub">記錄飲品</span></button>
+<button class="qfood" onclick="foodModal()"><span class="qicon">🍴</span><span class="qname">食物</span><span class="qsub">記錄食物</span></button>
+<button class="qbowel" onclick="bowelModal()"><span class="qicon">🚽</span><span class="qname">排便</span><span class="qsub">記錄排便</span></button><button class="qweight" onclick="weightModal()"><span class="qicon">＋</span><span class="qname">體重</span><span class="qsub">新增今日體重</span></button>
+<button class="qincome" onclick="financeModal('income')"><span class="qicon">💵</span><span class="qname">收入</span><span class="qsub">記錄收入</span></button>
+<button class="qexpense" onclick="financeModal('expense')"><span class="qicon">🧾</span><span class="qname">支出</span><span class="qsub">記錄支出</span></button>
+</div>
+
+<div class="section-title">今日其他健康概況</div>
+<div class="other-health-card">
+  <div class="other-health-head">
+    <div>
+      <div class="other-health-icon">♡</div>
+      <div>
+        <p>記錄身體狀況，掌握每日健康變化</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="other-health-main">
+    <div class="other-health-panel bowel-panel">
+      <div class="other-panel-icon">🚽</div>
+      <div class="other-panel-content">
+        <div class="bowel-title-row"><h4>排便次數</h4><button type="button" class="mini-add-bowel" onclick="bowelModal()">＋</button></div>
+        <div class="other-panel-value"><b id="bowelCount">0</b><span>次</span></div>
+        <div class="other-status" id="bowelStatus">尚無紀錄</div>
+      </div>
+      <div class="other-panel-details">
+        <div><span>📅 最近一次</span><b id="bowelDate">--/--/--</b></div>
+        <div><span>◷ 時間</span><b id="bowelTime">--:--</b></div>
+        <div><span>▣ 型態</span><b id="bowelTypeMini">--</b></div>
+        <div><span>量</span><b id="bowelQtyMini">--</b></div>
+      </div>
+    </div>
+
+    <div class="other-health-divider"></div>
+
+    <div class="other-health-panel weight-panel">
+      <div class="other-panel-icon">⚖️</div>
+      <div class="other-panel-content">
+        <div class="weight-title-row"><h4>今日體重</h4><button type="button" class="mini-add-weight" onclick="weightModal()" title="新增今日體重" aria-label="新增今日體重">＋</button></div>
+        <div class="other-panel-value"><b id="weightNow">--</b><span>kg</span></div>
+        <div class="other-status weight-status">尚無紀錄</div>
+      </div>
+      <div class="other-panel-details">
+        <div><span>↗ 變化</span><b id="weightChangeToday">-- kg</b></div>
+        <div><span>📅 最後記錄</span><b id="weightDate">--/--/--</b></div>
+        <div><span>◷ 時間</span><b id="weightTime">--:--</b></div>
+        <div><span>▣ 紀錄</span><b>最後一次</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="other-health-tip">
+    <span>💡</span>
+    <b>小提醒：</b> 持續記錄有助於觀察身體變化，讓健康管理更有效！
+  </div>
+</div>
+
+<div class="section-title">今日補水進度</div><div class="two">
+<div class="card health-big"><h3>今日補水進度</h3><div class="hero-num"><span id="waterHero">0</span> <span>/ <span id="waterHeroGoal">2,000</span> mL</span></div><div class="bar-lg"><i id="waterHeroBar"></i></div><b id="waterRemain">剩餘 2,000 mL</b><div class="tip">💧 小提醒：可依實際需求分次補充液體。</div></div>
+<div class="card health-big orange"><h3>今日熱量進度</h3><div class="hero-num"><span id="calHero">0</span> <span>/ <span id="calHeroGoal">2,000</span> kcal</span></div><div class="bar-lg orange"><i id="calHeroBar"></i></div><div class="tip">🔥 剩餘 <span id="calRemain">2,000</span> kcal</div></div>
+</div>
+
+<div class="section-title">7 日健康趨勢</div><div class="charts">
+<div class="card chart"><h4>補水趨勢（mL）</h4><div class="chartarea" id="waterChart"></div><div class="chartlabels"><span>6 天前</span><span>今天</span></div></div>
+<div class="card chart"><h4>熱量趨勢（kcal）</h4><div class="chartarea orange" id="calChart"></div><div class="chartlabels"><span>6 天前</span><span>今天</span></div></div>
+<div class="card chart"><h4>體重趨勢（kg）</h4><div class="chartarea green" id="weightChart"></div><div class="chartlabels"><span>6 天前</span><span>今天</span></div></div>
+<div class="card chart"><h4>排便次數趨勢（次）</h4><div class="chartarea purple" id="bowelChart"></div><div class="chartlabels"><span>6 天前</span><span>今天</span></div></div>
+</div>
+
+<div class="section-title">財務記帳</div><div class="finance finance-compact">
+<div class="finance-title">本期財務總覽 <span class="finance-period-inline">（<span id="financePeriod"></span>）</span></div>
+<div class="money3">
+<div class="moneybox"><span class="income">收入</span><b class="income" id="finIncome">$0</b></div>
+<div class="moneybox"><span class="expense">支出</span><b class="expense" id="finExpense">$0</b></div>
+<div class="moneybox"><span>結餘</span><b class="balance" id="finBalance">$0</b></div>
+</div>
+<div class="finance-actions">
+<button class="outline" onclick="financeModal('income')">＋ 新增收入</button>
+<button class="outline expense-btn" onclick="financeModal('expense')">＋ 新增支出</button>
+</div>
+
+
+<details class="finance-details">
+<summary>📊 財務統計與趨勢</summary>
+<div class="finance-analytics">
+<div class="finance-chart-card"><div class="chart-head"><b>每日收支曲線</b><span>本期</span></div><canvas id="financeTrendChart"></canvas></div>
+<div class="finance-chart-card"><div class="chart-head"><b>支出分類統計</b><span>本期</span></div><canvas id="financeCategoryChart"></canvas></div>
+<div class="finance-chart-card"><div class="chart-head"><b>本期財務摘要</b></div><div id="financeStats"></div></div>
+</div>
+</details>
+
+<div class="finance-cycle">發薪日：每月 <span id="salaryDayLabel">5</span> 日　｜　週期：<span id="financePeriod2"></span> <button class="secondary">設定</button></div>
+<div class="finance-hidden-data" aria-hidden="true"><div id="finIncomeList"></div><div id="finCats"></div><div id="finExpenseList"></div></div>
+</div>
+</section>
+
 <section id="water" class="page"><div class="page-head"><h2>補水紀錄</h2><button class="primary" onclick="waterModal()">＋ 自訂補水</button></div><div class="card"><div id="waterTable"></div></div></section>
 <section id="drink" class="page"><div class="page-head"><h2>飲品紀錄</h2><button class="primary" onclick="drinkModal()">＋ 新增飲品</button></div><div class="card"><div id="drinkTable"></div></div></section>
 <section id="food" class="page"><div class="page-head"><h2>食物紀錄</h2><button class="primary" onclick="foodModal()">＋ 新增食物</button></div><div class="card"><div id="foodTable"></div></div></section>
@@ -3444,36 +3545,16 @@ document.addEventListener('change',function(e){
 
 
 <script>
-/* ===== v4.5 飲品／食物紀錄首頁精簡與查看全部導頁 ===== */
+/* ===== v4.5 修正版：首頁精簡，不破壞 dashboard ===== */
 (function(){
   'use strict';
-  function page(name){
-    if(typeof window.showPage==='function'){window.showPage(name);return true;}
+  function go(name){
+    if(typeof window.showPage==='function'){window.showPage(name);return;}
     var el=document.querySelector('[data-page="'+name+'"]');
-    if(el){el.click();return true;}
-    return false;
+    if(el)el.click();
   }
-  function bind(){
-    var links=document.querySelectorAll('a,button');
-    links.forEach(function(el){
-      var t=(el.textContent||'').replace(/\s+/g,' ').trim();
-      if(t.indexOf('查看全部')===0 && !el.__v45){
-        var parent=el.closest('section, .card, div');
-        var s=parent?parent.textContent:'';
-        var target=s.indexOf('今日飲品紀錄')>=0?'drinks':(s.indexOf('今日食物紀錄')>=0?'foods':'');
-        if(target){
-          el.__v45=true;
-          el.removeAttribute('href');
-          el.type='button';
-          el.onclick=function(e){e.preventDefault();page(target);};
-          el.style.cursor='pointer';
-        }
-      }
-    });
-  }
-  window.goToDrinkRecords=function(){page('drinks');};
-  window.goToFoodRecords=function(){page('foods');};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);else setTimeout(bind,0);
+  window.goToDrinkRecords=function(){go('drinks');};
+  window.goToFoodRecords=function(){go('foods');};
 })();
 </script>
 
